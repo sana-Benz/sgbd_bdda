@@ -78,7 +78,7 @@ public class DiskManager {
     public void ReadPage (PageId pageId, ByteBuffer buff) {
         RandomAccessFile fichier = null;
         try {
-            fichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "r");
+            fichier = new RandomAccessFile(construireCheminFichier(pageId.getFileIdx()), "r");
             int offset = calculOffset(pageId.getPageIdx());
             fichier.seek(offset);
             // Pour transférer des données dans un ByteBuffer, il faut d'abord lire dans un tableau de bytes
@@ -112,7 +112,7 @@ public class DiskManager {
         //Cette méthode écrit (copie) le contenu de l’argument buff dans le fichier et à la position indiquée par l’argument pageId.
          RandomAccessFile fichier = null;
              try {
-                 fichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw");
+                 fichier = new RandomAccessFile(construireCheminFichier(pageId.getFileIdx()), "rw");
                  int offset = calculOffset(nbPagesFichier(fichier));
                  fichier.seek(offset); // Positionne le curseur à l'endroit où la nouvelle page sera écrite
                  fichier.write(buff.array(), buff.position(), buff.limit()); // Écrit le contenu de buff dans le fichier
