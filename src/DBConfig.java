@@ -10,11 +10,15 @@ public class DBConfig {
     private String dbpath;
     private int pagesize;
     private int dm_maxfilesize;
+    private int bm_buffercount;
+    private String bm_policy;
 
-    public DBConfig(String dbpath, int pagesize, int dm_maxfilesize) {
+    public DBConfig(String dbpath, int pagesize, int dm_maxfilesize, int bm_buffercount, String bm_policy) {
         this.dbpath = dbpath;
         this.pagesize = pagesize;
         this.dm_maxfilesize = dm_maxfilesize;
+        this.bm_buffercount = bm_buffercount;
+        this.bm_policy = bm_policy;
     }
 
     public String getDbpath() {
@@ -25,6 +29,13 @@ public class DBConfig {
     }
     public int getDm_maxfilesize() {
         return dm_maxfilesize ;
+    }
+
+    public int getBm_buffercount() {
+        return bm_buffercount;
+    }
+    public String getBm_policy() {
+        return bm_policy;
     }
 
     public static DBConfig loadDBConfig(String fichierConfig) throws IOException, ParseException{
