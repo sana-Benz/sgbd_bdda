@@ -20,5 +20,4 @@ public class BufferManager {
         }
     }
 
-    // Autres méthodes ici (GetPage, FreePage, FlushBuffers, etc.)
 }
