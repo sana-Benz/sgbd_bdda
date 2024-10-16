@@ -41,5 +41,18 @@ public class Buffer {
         pinCount=1;
         dirty= false;
     }
+    public void incrementPinCount(){
+        pinCount++;
+    }
+    public void setDirty(){
+        if(!this.dirty)
+            this.dirty = true;
+    }
+
+    public void decrementerLePinCount(){
+        if(pinCount > 0)
+            pinCount--;
+
+    }
 }
 

@@ -24,5 +24,14 @@ public class BufferManager {
             buffer.reset();
         }
     }
+    public void freePageId(PageId pageId, boolean valdirty){
+        for (Buffer buffer : bufferPool) {
+            if((buffer.getPageId() != null) && (buffer.getPageId().getPageIdx() == pageId.getPageIdx()) &&(buffer.getPageId().getFileIdx() == pageId.getFileIdx()) ){
+                buffer.setDirty();
+                buffer.decrementerLePinCount();
+            }
+
+        }
+    }
 
 }
