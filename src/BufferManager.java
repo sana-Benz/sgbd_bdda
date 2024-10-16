@@ -1,34 +1,28 @@
+import java.awt.*;
 import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.ArrayList;
 
 public class BufferManager {
-    private ByteBuffer buffer;
-    private PageId pageId;
-    private int pinCount;
-    private int dirty;
+    private DBConfig config;
+    private DiskManager diskManager;
+    private String currentPolicy;
+    private List<Buffer> bufferPool; // Liste des buffers
 
-    public BufferManager(PageId pageId) {
-        this.pageId = pageId;
-    }
-
-    public BufferManager(ByteBuffer buffer) {
-        this.buffer = buffer;
+    public BufferManager(DBConfig config, DiskManager diskManager) {
+        this.config = config;
+        this.diskManager = diskManager;
+        this.bufferPool = new ArrayList<>();
     }
 
-    public BufferManager(int pinCount) {
-        this.pinCount = pinCount;
-    }
-    public BufferManager(int dirty){
-        this.dirty = dirty;
+
+    public void flushBuffers() {
+        for (Buffer buffer : bufferPool) {
+            if (buffer.isDirty()) {
+                diskManager.WritePage(buffer.getPageId(), buffer.getData());
+            }
+            buffer.reset();
+        }
     }
 
-    public int getDirty() {
-        return dirty;
-    }
-
-    public void setDirty(int dirty) {
-        this.dirty = dirty;
-    }
-    public void freePage(PageId pageId, int valdirty){
-
-    }
 }
