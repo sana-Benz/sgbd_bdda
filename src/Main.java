@@ -9,6 +9,7 @@ import org.json.simple.parser.ParseException;
 
 public class Main {
         //Test DBConfig
+        {/*
         public static void main(String [] args) {
 
         try {
@@ -25,5 +26,5 @@ public class Main {
                 System.out.println("erreur: " + e.getMessage());
         }
         }
-
+*/}
 }
