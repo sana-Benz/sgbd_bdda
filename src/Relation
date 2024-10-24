@@ -1,0 +1,117 @@
+package Projet_SGBD;
+
+import java.nio.ByteBuffer;
+import java.util.List;
+
+
+
+public class Relation {
+
+	private String nomRelation;
+	private int nbCol;
+	private List<String> columnNames;  
+	private List<String> columnTypes;
+
+   
+   public Relation(String nomRelation, int nbCol, List<String> columnNames, List<String> columnTypes) {
+	   this.nomRelation = nomRelation;
+	   this.nbCol = nbCol;
+	   this.columnNames = columnNames;
+	   this.columnTypes = columnTypes;
+   }
+
+   public String getNomRelation() {
+	   return nomRelation;
+   }
+   
+   public void setNomRelation(String nomRelation) {
+	   this.nomRelation = nomRelation;
+   }
+   
+   public int getNbCol() {
+	   return nbCol;
+   }
+   
+   public void setNbCol(int nbCol) {
+	   this.nbCol = nbCol;
+   }
+   
+   public List<String> getColumnNames() {
+	   return columnNames;
+   }
+   
+   public void setColumnNames(List<String> columnNames) {
+	   this.columnNames = columnNames;
+   }
+
+   public List<String> getColumnTypes() {
+	   return columnTypes;
+   }
+
+   public void setColumnTypes(List<String> columnTypes) {
+	   this.columnTypes = columnTypes;
+   }
+
+   public void addColumn(String columnName, String columnType) {
+       this.columnNames.add(columnName);
+       this.columnTypes.add(columnType);
+       this.nbCol++;
+   }
+   public int writeRecordToBuffer(Record record, ByteBuffer buff, int pos) {
+	    // Récupérer les valeurs et les types des colonnes
+	    List<String> values = record.getValues();
+	    List<String> columnTypes = this.getColumnTypes(); // Méthode pour obtenir les types des colonnes
+
+	    // Vérification si la relation a des colonnes de type VARCHAR
+	    boolean hasVariableLengthColumn = columnTypes.stream().anyMatch(type -> type.startsWith("VARCHAR"));
+
+	    if (hasVariableLengthColumn) {
+	        // Format à taille variable : utiliser un offset directory
+	        int n = values.size();
+
+	        // Écrire l'offset directory
+	        for (int i = 0; i < n; i++) {
+	            buff.putInt(pos + i * 4, pos + (n * 4) + i); // Position de début de chaque valeur
+	        }
+
+	        // Dernier entier pour la position de fin
+	        buff.putInt(pos + n * 4, pos + (n * 4) + values.stream().mapToInt(String::length).sum());
+
+	        // Écrire les valeurs
+	        int currentPos = pos + (n * 4) + (n * 4); // Position pour écrire les valeurs
+	        for (String value : values) {
+	            buff.position(currentPos);
+	            buff.put(value.getBytes()); // Écrire les caractères de la chaîne
+	            currentPos += value.length(); // Avancer la position actuelle
+	        }
+
+	        return (n * 4) + values.stream().mapToInt(String::length).sum() + (n + 1) * 4; // Total en octets
+	    } else {
+	        // Format à taille fixe
+	        int totalBytes = 0;
+	        for (int i = 0; i < values.size(); i++) {
+	            String value = values.get(i);
+	            switch (columnTypes.get(i)) {
+	                case "INT":
+	                    buff.putInt(Integer.parseInt(value)); // Convertir et écrire en tant qu'int
+	                    totalBytes += 4;
+	                    break;
+	                case "REAL":
+	                    buff.putFloat(Float.parseFloat(value)); // Convertir et écrire en tant que float
+	                    totalBytes += 4;
+	                    break;
+	                case "CHAR(10)":
+	                    byte[] charBytes = new byte[10];
+	                    System.arraycopy(value.getBytes(), 0, charBytes, 0, Math.min(value.length(), 10));
+	                    buff.put(charBytes);
+	                    totalBytes += 10; // Écrire 10 octets
+	                    break;
+	                // Ajouter d'autres types si nécessaire
+	            }
+	        }
+	        return totalBytes; // Retourner le total en octets écrits
+	    }
+	}
+
+    
+}
