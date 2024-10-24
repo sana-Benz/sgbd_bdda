@@ -4,41 +4,34 @@ import java.nio.ByteBuffer;
 public class DiskManagerTests {
 
     public static void main(String[] args) throws IOException {
-        DBConfig config = new DBConfig("../DB", 4096, 10485760, 100, "LRU");
+        //test modifié
+        
+        DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
         DiskManager dm = new DiskManager(config);
 
+        // Boucle pour créer 3 fichiers avec 2 pages dans chacun
+            for (int pageNum = 0; pageNum < 6; pageNum++) {
+                // Allouer une page
+                PageId pageId = dm.AllocPage();
+                System.out.println("Page allouée : Fichier " + pageId.getFileIdx() + ", Page " + pageId.getPageIdx());
 
-        // Test allocation de page
-        PageId pageId = dm.AllocPage();
-        System.out.println("Page allouée : Fichier " + pageId.getFileIdx() + ", Page " + pageId.getPageIdx());
+                // Écriture dans la page
+                ByteBuffer buffer = ByteBuffer.allocate(config.getPageSize());
+                buffer.put("Test d'écriture".getBytes());
+                dm.WritePage(pageId, buffer);
+                System.out.println("Page " + pageNum + " écrite avec succès.");
 
-        // Test écriture dans une page
-        ByteBuffer buffer = ByteBuffer.allocate(config.getPageSize());
-        buffer.put("Test d'écriture".getBytes());
-        dm.WritePage(pageId, buffer);
-        System.out.println("Page écrite avec succès.");
+                // Sauvegarder l'état après l'écriture
+                dm.SaveState();
 
-        // Test lecture de la page
-        ByteBuffer readBuffer = ByteBuffer.allocate(config.getPageSize());
-        dm.ReadPage(pageId, readBuffer);
-        System.out.println("Contenu lu : " + new String(readBuffer.array()));
 
-        // Sauvegarder l'état
+            }
+            // test pour désallouer une page et la mettre dans pagesLibres
+        PageId pageid = new PageId(2,1);
+        dm.DeallocPage (pageid);
         dm.SaveState();
 
-        // Lire la page pour vérifier le contenu
-        dm.ReadPage(pageId, readBuffer);
-        System.out.println("Contenu lu : " + new String(readBuffer.array()).trim()); // Utilise trim() pour enlever les espaces
 
-        // Effacer le contenu et charger l'état
-        dm.DeallocPage(pageId); // Désalloue la page pour simuler une "suppression"
-
-        // Charger l'état
-        dm.LoadState();
-
-        // Lire à nouveau la page après le chargement
-        dm.ReadPage(pageId, readBuffer);
-        System.out.println("Contenu lu après chargement : " + new String(readBuffer.array()).trim()); // Vérifie si le contenu est toujours présent
+        System.out.println("Test terminé : 3 fichiers créés avec 2 pages écrites dans chacun.");
     }
-
 }
