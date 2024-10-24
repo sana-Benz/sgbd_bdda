@@ -22,6 +22,7 @@ public class TestColInfo {
         System.out.println("Type de colonne : " + colInfo4.getTypeCol());
         System.out.println("Taille de colonne : " + colInfo4.getLengthString());
         
+        
 	}
 
 }

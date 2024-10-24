@@ -12,6 +12,7 @@ public class Relation implements Serializable {
 		this.nomRelation = nomRelation;
 		this.nbCol = nbCol;
 		this.tableCols = tableCols;
+		
 	}
 
 	public String getNomRelation() {

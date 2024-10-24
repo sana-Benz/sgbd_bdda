@@ -18,6 +18,7 @@ public class TestRelation {
 			System.out.println("Nome de colonne : " + colonnes.get(i).getNameCol());
 	        System.out.println("Type de colonne : " + colonnes.get(i).getTypeCol());
 	        System.out.println("Taille de colonne : " + colonnes.get(i).getLengthString());
+	        
 		}
 		
 	}

@@ -17,6 +17,10 @@ public class TestRecord {
 		valeursRec.add("ProjetBDDAL3");
 		record.setValeursRec(valeursRec);
 		
+		
+		
+		
+		
 		ByteBuffer buffer = ByteBuffer.allocate(100);
 		int bytesEcrite = record.writeToBuffer(buffer, 0);
 		System.out.println("Bytes ecrite : " + bytesEcrite);

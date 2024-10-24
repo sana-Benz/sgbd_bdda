@@ -9,6 +9,7 @@ public class ColInfo {
         this.ColName = ColName;
         this.typeCol = typeCol;
         this.lengthString = lengthString;
+        
     }
 
 

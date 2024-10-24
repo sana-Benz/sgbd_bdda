@@ -141,6 +141,7 @@ public class Record {
 				default:
 					System.out.println("Ce type de la colonne invalide !!");
 					break;
+					
 				}
 			}
 			return totalSize;
