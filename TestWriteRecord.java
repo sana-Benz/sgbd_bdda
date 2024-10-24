@@ -6,7 +6,7 @@ import java.util.List;
 
 public class TestWriteRecord {
     public static void main(String[] args) {
-        // Créer un Record avec des valeurs simples
+        // Créer un Record avec des valeurs simples 1111
         Record record = new Record(Arrays.asList("123", "456.78", "Hello"));
 
         // Créer une Relation avec les types de colonnes (sans ColInfo)
