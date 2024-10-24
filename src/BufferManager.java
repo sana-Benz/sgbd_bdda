@@ -32,6 +32,7 @@ public class BufferManager {
         // Recherche si la page est déjà chargée dans un buffer
         for (Buffer buffer : bufferPool) {
             if (buffer.getPageId().equals(pageId)) {
+                System.out.println("La page existe dans le bufferPool ");
                 buffer.incrementPinCount();
                 updateBufferOrder(buffer);
                 return buffer.getData(); // Retourne le buffer
@@ -40,6 +41,7 @@ public class BufferManager {
 
         //si la page n'est pas dans les buffers et que le pool est plein
         if(bufferPool.size()>=config.getBm_buffercount()) {
+            System.out.println("La page existe dans le bufferPool mais il est plein ");
             Buffer bufferToReplace= selectbufferToReplace();
 
             if(bufferToReplace.getDirty()) {
@@ -54,7 +56,8 @@ public class BufferManager {
 
             return bufferToReplace.getData();
         }
-        //Si le pool n'est pas vide, on charge la page depuis le disque
+        //Si le pool n'est pas plein, on charge la page depuis le disque
+        System.out.println("La page est chargée depuis le disque  ");
         ByteBuffer newBuffer = loadPageFromDisk(pageId);
         Buffer newBufferObj= new Buffer(pageId, newBuffer);
         bufferPool.add(newBufferObj);
@@ -117,12 +120,17 @@ public class BufferManager {
         }
     }
 
-    public void flushBuffers() {
+    public void flushBuffers() throws Exception{
         for (Buffer buffer : bufferPool) {
+            if (buffer.getPinCount()>0){
+                throw new Exception("Le flush des pages est interrompu : La page "+buffer.getPageId().getPageIdx() +" du fichier " +
+                        buffer.getPageId().getFileIdx()+ " est encore en cours d'utilisation");
+            }
             if (buffer.getDirty()) {
                 diskManager.WritePage(buffer.getPageId(), buffer.getData());
             }
             buffer.reset();
+            System.out.println("Le flush a bien été effectué");
         }
     }
 }

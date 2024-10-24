@@ -5,7 +5,7 @@ public class DiskManagerTests {
 
     public static void main(String[] args) throws IOException {
         //test modifié
-        
+
         DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
         DiskManager dm = new DiskManager(config);
 
