@@ -1,0 +1,32 @@
+package Projet_SGBD;
+
+
+public class RecordId {
+    
+        private PageId pageId; // L'identifiant de la page où se trouve le record
+        private int slotIdx;   // L'indice du slot où se trouve le record
+    
+        // Constructeur
+        public RecordId(PageId pageId, int slotIdx) {
+            this.pageId = pageId;
+            this.slotIdx = slotIdx;
+        }
+    
+        // Getters
+        public PageId getPageId() {
+            return pageId;
+        }
+    
+        public int getSlotIdx() {
+            return slotIdx;
+        }
+    
+        @Override
+        public String toString() {
+            return "RecordId{" +
+                   "pageId=" + pageId +
+                   ", slotIdx=" + slotIdx +
+                   '}';
+        }
+    }
+    
