@@ -7,6 +7,11 @@ public class Relation implements Serializable {
 	private String nomRelation;
 	private int nbCol;
 	private ArrayList<ColInfo> tableCols;
+	PageId headerPageId;
+	DiskManager disk;
+	
+	/*PageId pageId;
+	private int slotIdx;*/
 
 	public Relation(String nomRelation, int nbCol, ArrayList<ColInfo> tableCols) {
 		this.nomRelation = nomRelation;

@@ -28,12 +28,12 @@ public class TestRecord {
 		Record record2 = new Record(relation);
 		int byteslus = record2.readFromBuffer(buffer, 0);
 		System.out.println("Bytes lus : " + byteslus);
-		/*
+		
 		ArrayList<String> valeursLus = record2.getValeursRec();
 		for(int i = 0; i < valeursLus.size(); i++) {
 			System.out.println("Colonne" + (i+1) + " : "+ valeursLus.get(i));
 		}
-		*/
+		
 		
 	}
 
