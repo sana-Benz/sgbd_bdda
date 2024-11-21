@@ -30,8 +30,13 @@ public class DBConfig {
     public int getDm_maxfilesize() {
         return dm_maxfilesize ;
     }
-    public int getBm_buffercount() {return bm_buffercount ;}
-    public String getBm_policy() { return bm_policy ;}
+   
+    public int getBm_buffercount() {
+        return bm_buffercount;
+    }
+    public String getBm_policy() {
+        return bm_policy;
+    }
 
     public static DBConfig loadDBConfig(String fichierConfig) throws IOException, ParseException{
         JSONParser parser = new JSONParser();
