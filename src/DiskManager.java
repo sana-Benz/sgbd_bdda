@@ -30,6 +30,7 @@ public class DiskManager {
         if (!binDataDirectory.exists()) {
             binDataDirectory.mkdir(); // Créer le dossier Bin_Data
         }
+
     } 
 
     public String construireNomFichier(int index){
@@ -105,6 +106,7 @@ public class DiskManager {
             buff.clear();
             buff.put(pageData, 0, bytesRead);
             buff.flip();
+
  
         } catch (IOException e) {
             System.out.println("Erreur lors de la lecture de la page : " + e.getMessage());

@@ -13,7 +13,7 @@ public class BufferManager {
         this.bufferPool= new LinkedList<>();
         this.currentPolicy = config.getBm_policy(); // Récupération de la politique depuis DBConfig
     }
-    
+
     private Buffer selectbufferToReplace() {
     	Buffer bufferToReplace=null;
     	if(currentPolicy.equals("LRU")) { 
