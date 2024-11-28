@@ -28,10 +28,12 @@ public class Relation implements Serializable {
 	}
 
 	public ArrayList<ColInfo> getTableCols() {
+		
 		return tableCols;
 	}
 	
 	public PageId getHeaderPageId() {
+		
 		return headerPageId;
 	}
 
