@@ -1,4 +1,3 @@
-
 public class RecordId {
 
 	private PageId pageId;
@@ -26,6 +25,11 @@ public class RecordId {
 	public void setSlotIdx(int slotIdx) {
 		this.slotIdx = slotIdx;
 	}
+  
+  @Override
+    public String toString() {
+        return "RecordId{" + "pageId=" + pageId + ", slotIdx=" + slotIdx + '}';
+    }
     
-
+  
 }

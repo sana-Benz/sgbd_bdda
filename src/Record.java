@@ -4,10 +4,12 @@ import java.util.ArrayList;
 public class Record {
 	private Relation relation;
 	private ArrayList<String> valeursRec;
+	private RecordId recordId;
 
-	public Record(Relation relation) {
+	public Record(Relation relation, RecordId recordId) {
 		this.relation = relation;
 		this.valeursRec = new ArrayList<>();
+		this.recordId = recordId;
 	}
 
 	public ArrayList<String> getValeursRec() {
@@ -141,7 +143,7 @@ public class Record {
 				default:
 					System.out.println("Ce type de la colonne invalide !!");
 					break;
-					
+
 				}
 			}
 			return totalSize;
