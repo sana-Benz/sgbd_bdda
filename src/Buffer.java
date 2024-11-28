@@ -59,9 +59,7 @@ public class Buffer {
     public void setDirty(boolean dirty) {
         this.dirty = dirty;
     }
-    public void incrementPinCount(){
-        pinCount++;
-    }
+    
     public void setDirty(){
         if(!this.dirty)
             this.dirty = true;
