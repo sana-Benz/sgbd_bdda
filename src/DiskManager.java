@@ -9,19 +9,17 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class DiskManager {
     private DBConfig config;
     private List<Integer> pagesLibres= new ArrayList<>(); // Liste des pages libres d'un fichier
     private int nbMaxPages; // nombre maximal de pages dans un fichier
-    private static int indexFichierCourant;
-    private int nbPagesAllouees; // Nombre de pages allouées dans le fichier courant
+    private static int indexFichierCourant = 0; 
 
-
+ 
     public DiskManager(DBConfig config) throws IOException {
         this.config = config;
         this.nbMaxPages = config.getDm_maxfilesize() / config.getPageSize();
-
+        
         // Création du dossier DB s'il n'existe pas
         File dbDirectory = new File(config.getDbpath());
         if (!dbDirectory.exists()) {
@@ -33,67 +31,60 @@ public class DiskManager {
             binDataDirectory.mkdir(); // Créer le dossier Bin_Data
         }
 
-        // Vérifier si le fichier de sauvegarde existe avant de charger l'état
-        File saveFile = new File(dbDirectory, "dm.save");
-        if (saveFile.exists()) {
-            LoadState();
-        } else {
-            indexFichierCourant=0;
-            nbPagesAllouees=0;
-        }
-    }
+    } 
 
     public String construireNomFichier(int index){
-        return "F" + index +".rsdb" ;
+        return "F" + index +".rsdb" ; 
     }
 
-    public String construireCheminFichier(int index){
+    public String construireCheminFichier(int index){ 
         return config.getDbpath()+"/Bin_Data/"+construireNomFichier(index);
     }
-
-
-
-    public PageId AllocPage() throws IOException{
-        RandomAccessFile fichier = null;
+ 
+    public int nbPagesFichier(RandomAccessFile fichier) { // Calcule le nombre de pages qui existent/sont allouées dans le fichier
         try {
-            fichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw");
-        }catch(IOException e){
-            System.out.println("Erreur d'ouverture du fichier pour l'allocation de page" + e.getMessage());
-            return null;
+            int nbPagesFichier = (int) (fichier.length() / config.getPageSize());
+            return(nbPagesFichier);
+        } catch (IOException e) {
+            System.out.println("Erreur de calcul du nombre de pages du fichier " + e.getMessage());
+            return 0;
         }
-        if (!pagesLibres.isEmpty()) {
-            Integer indicePageLibre = pagesLibres.remove(pagesLibres.size() - 1); //retourne l'indice de la derniere page vide
-            System.out.println("Page libre utilisée : " + indicePageLibre);
-            PageId pageId = new PageId(indexFichierCourant, indicePageLibre);
-            return pageId;
-        }
-        //je dois savoir si j'ai encore de l'espace pour ajouter une page dans le fichier courant
-        if (nbPagesAllouees < nbMaxPages ) {
-            int nextPageIdx = nbPagesAllouees; // Calcule l'indice avant d'écrire la page
-            ByteBuffer newPage = ByteBuffer.allocate(config.getPageSize());
-            nbPagesAllouees++;
-            //System.out.println("Nouvelle page allouée : Fichier " + indexFichierCourant + ", Page " + nextPageIdx);
-            PageId pageId = new PageId(indexFichierCourant, nextPageIdx); // Utilise cet indice pour PageId
-            return pageId;
-        }else{ //sinon, je cree un nouveau fichier et cree la premiere page
-            indexFichierCourant ++;
-            try {
-                // Créer un nouveau fichier RandomAccessFile
-                RandomAccessFile nouveauFichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw");
-                ByteBuffer newPage = ByteBuffer.allocate(config.getPageSize()); // Crée la première page
-                //nouveauFichier.write(newPage.array());// on écrit qlq chose dans la nouvelle page
-                nbPagesAllouees = 1;
-                //System.out.println("Création d'un nouveau fichier : " + indexFichierCourant + " avec la première page.");
-                PageId pageId = new PageId(indexFichierCourant, 0);
-                return pageId;
-            } catch (IOException e) {
-                System.out.println("Erreur lors de la création du nouveau fichier pour l'allocation d'une nouvelle page: " + e.getMessage());
-                return null;
-            }
-        }
+    }
+
+     public PageId AllocPage() throws IOException{
+         try(RandomAccessFile fichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw")){
+        	 
+         if (!pagesLibres.isEmpty()) {
+             Integer indicePageLibre = pagesLibres.remove(pagesLibres.size() - 1); //retourne l'indice de la derniere page vide
+             PageId pageId = new PageId(indexFichierCourant, indicePageLibre);
+             return pageId; 
+         }
+         //je dois savoir si j'ai encore de l'espace pour ajouter une page dans le fichier courant
+         if (nbPagesFichier(fichier) < nbMaxPages ) {
+             PageId pageId = new PageId(indexFichierCourant, nbPagesFichier(fichier) );
+             return pageId;
+         }else{ //sinon, je cree un nouveau fichier et cree la premiere page
+             indexFichierCourant ++;  
+         
+                 // Créer un nouveau fichier RandomAccessFile
+             try (RandomAccessFile nouveauFichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw")){
+                 ByteBuffer newPage = ByteBuffer.allocate(config.getPageSize()); // Crée la première page
+                 nouveauFichier.write(newPage.array());// on écrit qlq chose dans la nouvelle page
+                 PageId pageId = new PageId(indexFichierCourant, 0); 
+                 return pageId; 
+             } catch (IOException e) {
+                 System.out.println("Erreur lors de la création du nouveau fichier pour l'allocation d'une nouvelle page: " + e.getMessage());
+                 return null; 
+             }
+         }
+       }catch (IOException e) {
+    	  System.out.println("Erreur d'ouverture du fichier pour l'allocation de page : " + e.getMessage());
+       }
+		return null;
     }
 
     private int calculOffset(int pageIdx) { // Calcule l'offset d'une page dans le fichier
+
         return pageIdx * config.getPageSize();
     }
 
@@ -116,6 +107,7 @@ public class DiskManager {
             buff.put(pageData, 0, bytesRead);
             buff.flip();
 
+ 
         } catch (IOException e) {
             System.out.println("Erreur lors de la lecture de la page : " + e.getMessage());
         } finally {
@@ -126,116 +118,73 @@ public class DiskManager {
                 } catch (IOException e) {
                     System.out.println("Erreur lors de la fermeture du fichier après lecture: " + e.getMessage());
                 }
-            }
-        }
+            } 
+        } 
     }
 
-    public void WritePage (PageId pageId, ByteBuffer buff){
+     public void WritePage (PageId pageId, ByteBuffer buff){
         //Cette méthode copie le contenu de l’argument buff dans le fichier et à la position indiquée par l’argument pageId.
-        RandomAccessFile fichier = null;
-        try {
-            fichier = new RandomAccessFile(construireCheminFichier(pageId.getFileIdx()), "rw");
-            int offset = calculOffset(pageId.getPageIdx());
-            fichier.seek(offset); // Positionne le curseur à l'endroit où la nouvelle page sera écrite
-            fichier.write(buff.array(),0,buff.limit()); // Écrit le contenu de buff dans le fichier
-        } catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture de la nouvelle page : " + e.getMessage());
-        }finally {
-            // Fermer le fichier à la fin
-            if (fichier != null) {
-                try {
-                    fichier.close();
-                } catch (IOException e) {
-                    System.out.println("Erreur lors de la fermeture du fichier après écriture: " + e.getMessage());
-                }
-            }
-        }
+         RandomAccessFile fichier = null;
+             try {
+                 fichier = new RandomAccessFile(construireCheminFichier(pageId.getFileIdx()), "rw");
+                 int offset = calculOffset(pageId.getPageIdx());
+                 fichier.seek(offset); // Positionne le curseur à l'endroit où la nouvelle page sera écrite
+                 fichier.write(buff.array(),0,buff.limit()); // Écrit le contenu de buff dans le fichier
+             } catch (IOException e) {
+                 System.out.println("Erreur lors de l'écriture de la nouvelle page : " + e.getMessage());
+             }finally {
+                 // Fermer le fichier à la fin 
+                 if (fichier != null) {
+                     try { 
+                         fichier.close();
+                     } catch (IOException e) {
+                         System.out.println("Erreur lors de la fermeture du fichier après écriture: " + e.getMessage());
+                     }
+                 }
+             } 
     }
 
-    public void DeallocPage (PageId pageId){
-        //Cette méthode doit désallouer une page, et la rajouter dans la liste des pages «libres»
-        pagesLibres.add(pageId.getPageIdx());
-        SaveState();
-
-    }
-    public void SaveState() {
+     public void DeallocPage (PageId pageId){
+         //Cette méthode doit désallouer une page, et la rajouter dans la liste des pages «libres»
+         pagesLibres.add(pageId.getPageIdx());
+         SaveState();
+     
+     }
+     public void SaveState() {
         //on sauvegarde la liste des pages vides
-        String cheminFichier = config.getDbpath() + "/dm.save"; //Le fichier s’appellera dm.save et sera placé à la racine dossier dbpath
+        String cheminFichier = config.getDbpath() + "/dm.save"; //Le fichier s’appellera dm.save et sera placé à la racine dossier dbpath .?
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(cheminFichier))) {
-            writer.write("FichierCourant:" + indexFichierCourant);
-            writer.newLine();
-            writer.write("NbPagesAllouees:" + nbPagesAllouees); // Sauvegarder le nombre de pages allouées dans le fichier
-            writer.newLine();
-            if (pagesLibres.isEmpty()) {
-                writer.write("pageLibres est vide");
-            }else{
-                for (Integer pageIdx : pagesLibres) {
-                    writer.write(pageIdx.toString());
-                    writer.newLine();
-                }
-                //System.out.println("L'état a été sauvegardé avec succès dans " + cheminFichier);
+            for (Integer pageIdx : pagesLibres) {
+                writer.write(pageIdx.toString());
+                writer.newLine();
             }
+            System.out.println("L'état a été sauvegardé avec succès dans " + cheminFichier);
         } catch (IOException e) {
             System.out.println("Erreur lors de la sauvegarde de l'état : " + e.getMessage());
         }
-    }
+    } 
 
-
+    
     public void LoadState() {
         //Cette méthode devra charger la liste des pages libres depuis le fichier dm.save
         String cheminFichier = config.getDbpath() + "/dm.save";
         File fichier = new File(cheminFichier);
         if (!fichier.exists()) {
             System.out.println("Aucun fichier de sauvegarde trouvé à l'emplacement : " + cheminFichier);
-            return;
-        }
-
-
-
+            return; 
+        } 
         try (BufferedReader reader = new BufferedReader(new FileReader(cheminFichier))) {
-            // Lire l'indice du fichier courant
-            String ligne = reader.readLine();
-            if (ligne != null && ligne.startsWith("FichierCourant:")) {
-                String[] parts = ligne.split(":");
-                if (parts.length == 2) {
-                    indexFichierCourant = Integer.parseInt(parts[1].trim());
-                    //System.out.println("indice du fichier courant chargé avec succès : " + indexFichierCourant);
-                }
-            }
-
-            // Lire le nombre de pages allouées dans le fichier
-            ligne = reader.readLine(); // Lire la deuxième ligne
-            if (ligne != null && ligne.startsWith("NbPagesAllouees:")) {
-                String[] parts = ligne.split(":");
-                if (parts.length == 2) {
-                    try {
-                        nbPagesAllouees = Integer.parseInt(parts[1].trim());
-                        //System.out.println("Nombre de pages allouées chargé avec succès : " + nbPagesAllouees);
-                    } catch (NumberFormatException e) {
-                        System.out.println("Erreur de format pour le nombre de pages allouées : " + e.getMessage());
-                    }
-                }
-            }
-
-
-            // Lire la liste des pages libres
+            String ligne;
             while ((ligne = reader.readLine()) != null) {
-                int pageIdx = Integer.parseInt(ligne.trim());
-                pagesLibres.add(pageIdx);
+                int pageIdx = Integer.parseInt(ligne.trim()); // Convertir la ligne en entier
+                pagesLibres.add(pageIdx); // Ajouter l'indice de la page libre à la liste
+                 
             }
-            //System.out.println("Pages libres chargées : " + pagesLibres);
-            //System.out.println("L'état a été chargé avec succès depuis " + cheminFichier);
+            System.out.println("L'état a été chargé avec succès depuis " + cheminFichier);
         } catch (IOException e) {
             System.out.println("Erreur lors du chargement de l'état : " + e.getMessage());
         } catch (NumberFormatException e) {
             System.out.println("Erreur de format dans le fichier de sauvegarde : " + e.getMessage());
         }
-    }
-
-
-
-
-
-
-
+    } 
 }
