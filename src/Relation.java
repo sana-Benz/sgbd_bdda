@@ -125,4 +125,21 @@ public class Relation {
             return null; // En cas d'erreur, retourner null
         }
     }
+    
+    public ArrayList<Record> getAllRecords (){
+    	
+    	ArrayList <Record> listRecords=new ArrayList<>();  //list of record
+        ArrayList<PageId> Pages=getDataPages();  //list of pages inside a relation
+        
+        for(int i=0;i<listPages.size();i++){
+            ArrayList<Record> listRecords = getRecordsInDataPage(Pages.get(i)); //get the record of a page
+            
+           
+            for(Record record:listRecords){
+                listRecords.add(record);
+            }
+        }
+        return listRecords;
+    }
+
 }
