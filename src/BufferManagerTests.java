@@ -1,10 +1,10 @@
 import java.nio.ByteBuffer;
 
-public class BufferManagerTests{
+public class BufferManagerTests{ 
 
     public static void main(String[] args) throws Exception {
         // Initialisation de la configuration et du DiskManager
-        DBConfig config = new DBConfig("../DB", 4096, 104857600, 100, "LRU");
+        DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
         DiskManager diskManager = new DiskManager(config);
   
         // Initialisation du BufferManager avec la politique LRU par défaut
@@ -12,10 +12,10 @@ public class BufferManagerTests{
  
         // Test 1 : Charger une page depuis le disque
         System.out.println("Test 1 : Charger une page depuis le disque"); 
-        PageId pageId1 = diskManager.AllocPage();
+        PageId pageId1 = diskManager.AllocPage(); 
         ByteBuffer pageData1 = bufferManager.GetPage(pageId1);
         if (pageData1 != null) {
-            System.out.println("Page 1 chargée avec succès !");
+            System.out.println("Page 1 chargée avec succès !"); 
         } else {
             System.out.println("Échec du chargement de la page 1 !");
         }
@@ -23,13 +23,13 @@ public class BufferManagerTests{
         // Test 2 : Charger une page déjà en mémoire
         System.out.println("Test 2 : Charger une page déjà en mémoire");
         ByteBuffer pageData2 = bufferManager.GetPage(pageId1);
-        if (pageData1 == pageData2) {
+        if (pageData1 == pageData2) { 
             System.out.println("La page 1 est bien récupérée depuis la mémoire !");
         } else {
             System.out.println("Échec : la page 1 n'a pas été récupérée depuis la mémoire !");
         }
  
-     // Test 3 : Politique de remplacement LRU
+     // Test 3 : Politique de remplacement LRU 
         System.out.println("Test 3 : Politique de remplacement LRU");
         PageId pageId2 = diskManager.AllocPage();
         ByteBuffer pageData3 = bufferManager.GetPage(pageId2);

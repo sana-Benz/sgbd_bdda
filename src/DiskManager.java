@@ -13,7 +13,7 @@ public class DiskManager {
     private DBConfig config;
     private List<Integer> pagesLibres= new ArrayList<>(); // Liste des pages libres d'un fichier
     private int nbMaxPages; // nombre maximal de pages dans un fichier
-    private static int indexFichierCourant = 0;
+    private static int indexFichierCourant = 0; 
 
  
     public DiskManager(DBConfig config) throws IOException {
@@ -33,7 +33,7 @@ public class DiskManager {
     } 
 
     public String construireNomFichier(int index){
-        return "F" + index +".rsdb" ;
+        return "F" + index +".rsdb" ; 
     }
 
     public String construireCheminFichier(int index){ 
@@ -48,15 +48,11 @@ public class DiskManager {
             System.out.println("Erreur de calcul du nombre de pages du fichier " + e.getMessage());
             return 0;
         }
-    } 
+    }
 
      public PageId AllocPage() throws IOException{
-         RandomAccessFile fichier = null;
-         try {
-             fichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw");
-         }catch(IOException e){
-             System.out.println("Erreur d'ouverture du fichier pour l'allocation de page" + e.getMessage());
-         }
+         try(RandomAccessFile fichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw")){
+        	 
          if (!pagesLibres.isEmpty()) {
              Integer indicePageLibre = pagesLibres.remove(pagesLibres.size() - 1); //retourne l'indice de la derniere page vide
              PageId pageId = new PageId(indexFichierCourant, indicePageLibre);
@@ -64,24 +60,26 @@ public class DiskManager {
          }
          //je dois savoir si j'ai encore de l'espace pour ajouter une page dans le fichier courant
          if (nbPagesFichier(fichier) < nbMaxPages ) {
-             ByteBuffer newPage = ByteBuffer.allocate(config.getPageSize());
-             fichier.write(newPage.array());
              PageId pageId = new PageId(indexFichierCourant, nbPagesFichier(fichier) );
              return pageId;
          }else{ //sinon, je cree un nouveau fichier et cree la premiere page
              indexFichierCourant ++;  
-             try {
+         
                  // Créer un nouveau fichier RandomAccessFile
-                 RandomAccessFile nouveauFichier = new RandomAccessFile(construireNomFichier(indexFichierCourant), "rw");
+             try (RandomAccessFile nouveauFichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw")){
                  ByteBuffer newPage = ByteBuffer.allocate(config.getPageSize()); // Crée la première page
                  nouveauFichier.write(newPage.array());// on écrit qlq chose dans la nouvelle page
-                 PageId pageId = new PageId(indexFichierCourant, 0);
-                 return pageId;
+                 PageId pageId = new PageId(indexFichierCourant, 0); 
+                 return pageId; 
              } catch (IOException e) {
                  System.out.println("Erreur lors de la création du nouveau fichier pour l'allocation d'une nouvelle page: " + e.getMessage());
-                 return null;
+                 return null; 
              }
-         }  
+         }
+       }catch (IOException e) {
+    	  System.out.println("Erreur d'ouverture du fichier pour l'allocation de page : " + e.getMessage());
+       }
+		return null;
     }
 
     private int calculOffset(int pageIdx) { // Calcule l'offset d'une page dans le fichier
@@ -119,7 +117,7 @@ public class DiskManager {
                     System.out.println("Erreur lors de la fermeture du fichier après lecture: " + e.getMessage());
                 }
             } 
-        }
+        } 
     }
 
      public void WritePage (PageId pageId, ByteBuffer buff){
@@ -135,7 +133,7 @@ public class DiskManager {
              }finally {
                  // Fermer le fichier à la fin 
                  if (fichier != null) {
-                     try {
+                     try { 
                          fichier.close();
                      } catch (IOException e) {
                          System.out.println("Erreur lors de la fermeture du fichier après écriture: " + e.getMessage());
@@ -172,7 +170,7 @@ public class DiskManager {
         if (!fichier.exists()) {
             System.out.println("Aucun fichier de sauvegarde trouvé à l'emplacement : " + cheminFichier);
             return; 
-        }
+        } 
         try (BufferedReader reader = new BufferedReader(new FileReader(cheminFichier))) {
             String ligne;
             while ((ligne = reader.readLine()) != null) {

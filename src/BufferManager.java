@@ -27,12 +27,12 @@ public class BufferManager {
     	}
     	return bufferToReplace;// Retourne le buffer qui doit etre remplacé
     }
-    
+     
     public ByteBuffer GetPage(PageId pageId) {
         // Recherche si la page est déjà chargée dans un buffer
         for (Buffer buffer : bufferPool) {
             if (buffer.getPageId().equals(pageId)) {   
-            	buffer.incrementPinCount();
+            	buffer.incrementPinCount(); 
                 updateBufferOrder(buffer);
                 return buffer.getData(); // Retourne le buffer
             }
@@ -122,7 +122,7 @@ public class BufferManager {
                 if (buffer.getDirty()) {
                     diskManager.WritePage(buffer.getPageId(), buffer.getData());
                 }
-                buffer.reset(); 
+                buffer.reset();  
             } 
         }
 } 
