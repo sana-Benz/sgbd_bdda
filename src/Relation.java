@@ -7,40 +7,45 @@ public class Relation implements Serializable {
 	private String nomRelation;
 	private int nbCol;
 	private ArrayList<ColInfo> tableCols;
-	private PageId headerPageId;
-	private DiskManager disk;
 	
-	public Relation(String nomRelation, int nbCol, ArrayList<ColInfo> tableCols, PageId headerPageId,
-			DiskManager disk) {
+	PageId headerPageId;
+	DiskManager disk;
+	
+	public Relation(String nomRelation, int nbCol, ArrayList<ColInfo> tableCols) {
 		this.nomRelation = nomRelation;
 		this.nbCol = nbCol;
 		this.tableCols = tableCols;
-		this.headerPageId = headerPageId;
-		this.disk = disk;
+		
 	}
 
 	public String getNomRelation() {
 		return nomRelation;
 	}
-   
+
 	public int getNbCol() {
+		
 		return nbCol;
 	}
 
 	public ArrayList<ColInfo> getTableCols() {
-		
 		return tableCols;
 	}
-	
-	public PageId getHeaderPageId() {
-		
-		return headerPageId;
-	}
 
-	public DiskManager getDisk() {
-		return disk;
-	}
+	public ArrayList<Record> getAllRecords (){
 
+        ArrayList <Record> listRecords=new ArrayList<>();  //list of record
+        ArrayList<PageId> Pages=getDataPages();  //list of pages inside a relation
+        
+        for(int i=0;i<listPages.size();i++){
+            ArrayList<Record> listRecords=getRecordsInDataPage(Pages.get(i)); //get the record of a page
+            
+           
+            for(Record record:listRecords){
+                listRecords.add(record);
+            }
+        }
+        return listRecords;
+    }
 	@Override
 	public String toString() {
 		String TableInfo = "--" + nomRelation + "--";
@@ -58,18 +63,6 @@ public class Relation implements Serializable {
 			}
 		}
 		return -1;
-	}
-	
-	public ArrayList<Record> GetAllRecords(){
-		ArrayList<Record> recordes = new ArrayList<>();
-		ArrayList<PageId> pages = getDataPages();
-		for(int i=0; pages.size(); i++) {
-			ArrayList<Record> recordsInPage = getRecordsInDataPage(pages.get(i));
-		}
-		for( Record record : recordsInPage) {
-			recordes.add(record);
-		}
-		return recordes;
 	}
 
 }
