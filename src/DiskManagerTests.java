@@ -4,12 +4,12 @@ import java.nio.ByteBuffer;
 	public class DiskManagerTests { 
 		
 		    public static void main(String[] args) throws IOException {
-		        DBConfig config = new DBConfig("../DB", 4096, 10485760, 100, "LRU");
-		        DiskManager dm = new DiskManager(config);
+		        DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
+		        DiskManager dm = new DiskManager(config); 
 
  
-		        // Test allocation de page 
-		        PageId pageId = dm.AllocPage();  
+		        // Test allocation de page  
+		        PageId pageId = dm.AllocPage();   
 		        System.out.println("Page allouée : Fichier " + pageId.getFileIdx() + ", Page " + pageId.getPageIdx());
  
 		        // Test écriture dans une page
@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 				ByteBuffer readBuffer = ByteBuffer.allocate(config.getPageSize());
 				dm.ReadPage(pageId, readBuffer);
 				System.out.println("Contenu lu : " + new String(readBuffer.array()));
-				
+				 
 				// Sauvegarder l'état
 		        dm.SaveState();   
 
