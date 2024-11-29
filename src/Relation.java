@@ -52,6 +52,13 @@ public class Relation {
         return -1;
     }
 
+    /**
+     * Cette méthode retourne le PageId d’une page de données sur laquelle il reste assez de place
+     * pour insérer le record ; si une telle page n’existe pas, la méthode retournera null.
+     * @param recordSize : un entier
+     * correspondant à la taille du record à insérer.
+     * @return PageId d'une page disponible, null sinon
+     */
     // Utiliser buffer pour obtenir la Header Page
     public PageId getFreeDataPageId(int recordSize) {
         try {
@@ -75,6 +82,14 @@ public class Relation {
         return null; // Aucune page disponible avec assez d'espace.
     }
 
+    /**
+     * Cette méthode écrit l’enregistrement record dans la page de données identifiée par pageId, et
+     *  renvoie son RecordId.
+     *  On suppose que la page dispose d’assez d’espace disponible pour l’insertion.
+     * @param record
+     * @param pageId
+     * @return RecordId du record écrit dans la dataPage
+     */
     public RecordId writeRecordToDataPage(Record record, PageId pageId) {
         try {
             // Charger la page via le BufferManager
@@ -125,7 +140,11 @@ public class Relation {
             return null; // En cas d'erreur, retourner null
         }
     }
-    
+
+    /**
+     * Cette méthode liste tous les records
+     * @return ArrayList de Record
+     */
     public ArrayList<Record> getAllRecords (){
     	
     	ArrayList <Record> listRecords=new ArrayList<>();  //list of record

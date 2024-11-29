@@ -28,7 +28,7 @@ public class Record {
 	 * Méthode writeToBuffer qui écrit l'enregistrement dans un tampon. Elle gère
 	 * les types de colonnes tels que INT, FLOAT, CHAR (longueur fixe) et VARCHAR
 	 * (longueur variable).
-	 *
+	 * @param record : un Record (dont les valeurs sont remplies correctement par l’appelant)
 	 * @param buff : ByteBuffer - le tampon dans lequel écrire.
 	 * @param pos  : int - la position de départ dans le tampon.
 	 * @return int : la taille totale de l'enregistrement en octets, ou -1 en cas
@@ -104,6 +104,15 @@ public class Record {
 		}
 	}
 
+	/**
+	 * Cette méthode rend comme résultat la taille totale (=le nombre d’octets) lus depuis le buffer.
+	 * Elle lit les valeurs du Record depuis le buffer à partir de pos, en supposant que le
+	 * Record a été écrit avec writeToBuffer.
+	 * @param Record : dont la liste de valeurs est vide et sera remplie par cette méthode
+	 * @param buff
+	 * @param pos : un entier correspondant à une position dans le buffer
+	 * @return int  le nombre d’octets lus depuis le buffer
+	 */
 	public int readFromBuffer(ByteBuffer buff, int pos) {
 		try {
 			valeursRec.clear();

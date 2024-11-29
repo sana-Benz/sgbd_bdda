@@ -26,8 +26,14 @@ public class BufferManager {
     	}
     	return bufferToReplace;// Retourne le buffer qui doit etre remplacé
     }
-     
-    public ByteBuffer GetPage(PageId pageId) {
+
+	/**
+	 *Cette méthode retourne un des buffers gérés par le BufferManager, rempli avec le contenu de la page
+	 * désignée par l’argument pageId.
+	 * @param pageId id de la page à charger
+	 * @return ByteBuffer qui contient le contenu de la page chargée
+	 */
+	public ByteBuffer GetPage(PageId pageId) {
         // Recherche si la page est déjà chargée dans un buffer
         for (Buffer buffer : bufferPool) {
             if (buffer.getPageId().equals(pageId)) {   
@@ -80,6 +86,14 @@ public class BufferManager {
 			bufferPool.addFirst(buffer);//ajoute au début et devient le plus récemment utilisé
 		}
 	}
+
+	/**
+	 * Cette méthode décrémente le pin_count et actualise le flag dirty (et aussi
+	 * potentiellement actualise des informations concernant la politique de remplacement).
+	 * @param pageId
+	 * @param valdirty
+	 * @throws Exception
+	 */
 	public void FreePage(PageId pageId, boolean valdirty) throws Exception {
 	    // Rechercher si la page est déjà chargée dans un buffer
 	    for (Buffer buffer : bufferPool) {
@@ -106,7 +120,11 @@ public class BufferManager {
 	    throw new Exception("Page " + pageId + " non trouvée dans le buffer pool.");
 	}
 
- 
+	/**
+	 * Cette méthode change la politique de remplacement courante, et a la priorité par
+	 * rapport à la politique spécifiée par la DBConfig passée au constructeur.
+	 * @param policy
+	 */
 	public void SetCurrentReplacementPolicy(String policy) {
         if (policy.equals("LRU") || policy.equals("MRU")) {
             currentPolicy = policy;
@@ -115,8 +133,16 @@ public class BufferManager {
             throw new IllegalArgumentException("Politique invalide : " + policy + ". Utilisez 'LRU' ou 'MRU'.");
         }
     }
-    
-        public void flushBuffers() {
+
+	/**
+	 * Cette méthode s'occupe de l’écriture de toutes les pages dont le flag dirty = 1 sur disque en utilisant le
+	 * DiskManager.
+	 *
+	 * Elle s'occupe aussi de la remise à 0 de tous les flags et contenus des buffers. Après appel de cette
+	 * méthode, le BufferManager repart avec des buffers où il n’y a aucun contenu de chargé
+	 * comme dans son état initial après appel du constructeur.
+	 */
+	public void flushBuffers() {
             for (Buffer buffer : bufferPool) {
                 if (buffer.getDirty()) {
                     diskManager.WritePage(buffer.getPageId(), buffer.getData());
