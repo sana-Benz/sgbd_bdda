@@ -51,6 +51,12 @@ public class DiskManager {
         }
     }
 
+    /**
+     *Cette méthode doit allouer une page, c’est à dire réserver une nouvelle page à la demande
+     * d’une des couches au-dessus. Elle retourne un PageId correspondant à la page nouvellement rajoutée.
+     * @return PageId
+     * @throws IOException
+     */
      public PageId AllocPage() throws IOException{
          try(RandomAccessFile fichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw")){
         	 
@@ -88,6 +94,12 @@ public class DiskManager {
         return pageIdx * config.getPageSize();
     }
 
+    /**
+     * Cette méthode remplit l’argument buff en copiant dans ce buffer le contenu disque de la
+     * page identifiée par l’argument pageId.
+     * @param pageId
+     * @param buff
+     */
     public void ReadPage (PageId pageId, ByteBuffer buff) {
         RandomAccessFile fichier = null;
         try {
@@ -122,6 +134,12 @@ public class DiskManager {
         } 
     }
 
+    /**
+     * Cette méthode remplit l’argument buff en copiant dans ce buffer le contenu disque de la
+     * page identifiée par l’argument pageId.
+     * @param pageId
+     * @param buff
+     */
      public void WritePage (PageId pageId, ByteBuffer buff){
         //Cette méthode copie le contenu de l’argument buff dans le fichier et à la position indiquée par l’argument pageId.
          RandomAccessFile fichier = null;
@@ -144,13 +162,23 @@ public class DiskManager {
              } 
     }
 
+    /**
+     * Cette méthode désalloue une page, et la rajoute dans la liste des pages «libres».
+     * @param pageId
+     */
      public void DeallocPage (PageId pageId){
          //Cette méthode doit désallouer une page, et la rajouter dans la liste des pages «libres»
          pagesLibres.add(pageId.getPageIdx());
          SaveState();
      
      }
-     public void SaveState() {
+
+    /**
+     * Cette méthode sauvegarde dans un fichier la liste des pages
+     * libres du gestionnaire disque. Le fichier s’appellera dm.save et sera placé à la racine du
+     * dossier dbpath.
+     */
+    public void SaveState() {
         //on sauvegarde la liste des pages vides
         String cheminFichier = config.getDbpath() + "/dm.save"; //Le fichier s’appellera dm.save et sera placé à la racine dossier dbpath .?
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(cheminFichier))) {
@@ -162,9 +190,11 @@ public class DiskManager {
         } catch (IOException e) {
             System.out.println("Erreur lors de la sauvegarde de l'état : " + e.getMessage());
         }
-    } 
+    }
 
-    
+    /**
+     * Cette méthode charge la liste des pages libres depuis le fichier dm.save
+     */
     public void LoadState() {
         //Cette méthode devra charger la liste des pages libres depuis le fichier dm.save
         String cheminFichier = config.getDbpath() + "/dm.save";
