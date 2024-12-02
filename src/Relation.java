@@ -133,7 +133,7 @@ public class Relation {
 	 *  Cette méthode rend comme résultat la taille totale (=le nombre d’octets) lus depuis le buffer.
 	 * Elle lit les valeurs du Record depuis le buffer à partir de pos, en supposant que le
 	 * Record a été écrit avec writeToBuffer.
-	 * @param Record : dont la liste de valeurs est vide et sera remplie par cette méthode
+	 * @param record : dont la liste de valeurs est vide et sera remplie par cette méthode
 	 * @param buff
 	 * @param pos : un entier correspondant à une position dans le buffer
 	 * @return int  le nombre d’octets lus depuis le buffer
@@ -268,7 +268,12 @@ public class Relation {
             return new RecordId(pageId, numSlots);
         } finally {
             // Marquer la page comme modifiée et libérer via BufferManager
-            buffer.FreePage(pageId, true);
+			try{
+				buffer.FreePage(pageId, true);
+			}catch(Exception e){
+				System.err.println("erreur dans la libération de la page: " + e.getMessage());
+			}
+
         }
     }
 
@@ -300,10 +305,8 @@ public class Relation {
 	 */
 
 	ArrayList<Record> getRecordsInDataPage(PageId pageId) {
-		// il faut passer Dm et Bm et Config dans le constructeur
-		// ce passage est provisoire
-		bufferManager = new BufferManager(config, diskManager);
-		ByteBuffer bufferPage = bufferManager.GetPage(pageId);
+		//bufferManager = new BufferManager(config, diskManager);
+		ByteBuffer bufferPage = buffer.GetPage(pageId);
 		ArrayList<Record> listeRecords = new ArrayList<>();
 
 		if (bufferPage == null) {
@@ -329,7 +332,7 @@ public class Relation {
 				if (recordSize > 0) {
 					RecordId rid = new RecordId(pageId, slotIdx);
 					Record record = new Record(this, rid);
-					int bytesRead = record.readFromBuffer(bufferPage, recordStart);
+					int bytesRead = readFromBuffer(record,bufferPage, recordStart);
 					if (bytesRead != recordSize) {
 						throw new IllegalStateException("Erreur : taille de record incohérente.");
 					}
@@ -339,7 +342,7 @@ public class Relation {
 		} finally {
 			// Libérer la page après utilisation
 			try {
-				bufferManager.FreePage(pageId, false);
+				buffer.FreePage(pageId, false);
 			} catch (Exception e) {
 				System.out.println("Erreur lors de la libération de page après lecture dans getRecordsInDataPage : " + e.getMessage());
 			}
@@ -359,7 +362,7 @@ public class Relation {
 
 		try {
 			// Charger la header page via le BufferManager
-			headerBuffer = bufferManager.GetPage(headerPageId);
+			headerBuffer = buffer.GetPage(headerPageId);
 
 			// Lire N (nombre de pages de données)
 			int N = headerBuffer.getInt(0);
@@ -377,7 +380,7 @@ public class Relation {
 		} finally {
 			// Libérer la header page après lecture
 			try{
-				bufferManager.FreePage(headerPageId, false);
+				buffer.FreePage(headerPageId, false);
 			}catch (Exception e) {
 				System.out.println("Erreur lors de la libération de page après lecture dans getDataPages : " + e.getMessage());
 			}
