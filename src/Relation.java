@@ -191,65 +191,6 @@ public class Relation {
 		}
 }
 
-/**
- *  Cette méthode rend comme résultat la taille totale (=le nombre d’octets) lus depuis le buffer.
- * Elle lit les valeurs du Record depuis le buffer à partir de pos, en supposant que le
- * Record a été écrit avec writeToBuffer.
- * @param Record : dont la liste de valeurs est vide et sera remplie par cette méthode
- * @param buff
- * @param pos : un entier correspondant à une position dans le buffer
- * @return int  le nombre d’octets lus depuis le buffer
- */
-public int readFromBuffer(ByteBuffer buff, int pos) {
-	try {
-		valeursRec.clear();
-		buff.position(pos);
-		int totalSize = 0;
-
-		for (int i = 0; i < relation.getNbCol(); i++) {
-			switch (relation.getTableCols().get(i).getTypeCol()) {
-			case INT:
-				int valeur_int = buff.getInt(); // lit 4 octs et les interpter comme un entier et avance la pos du
-												// tampon de 4 octs
-				valeursRec.add(Integer.toString(valeur_int));
-				totalSize += 4;
-				break;
-			case FLOAT:
-				float valeur_float = buff.getFloat();
-				valeursRec.add(Float.toString(valeur_float));
-				totalSize += 4;
-				break;
-			case CHAR:
-				int charLength = relation.getTableCols().get(i).getLengthString();
-				byte[] charBytes = new byte[charLength]; // Créer un tableau de bytes pour stocker les données lues
-															// depuis le tampon
-				buff.get(charBytes); // Lire les bytes correspondant à la longueur de la chaîne CHAR
-				String valeur_char = new String(charBytes).trim(); // remove spaces or extra-padding
-				valeursRec.add(valeur_char); // Ajouter la valeur lue (chaîne) dans la liste des valeurs
-				totalSize += charLength;
-				break;
-			case VARCHAR:
-				int varCharLength = buff.getInt();
-				byte[] varCharBytes = new byte[varCharLength];
-				buff.get(varCharBytes);
-				String varCharValue = new String(varCharBytes);
-				valeursRec.add(varCharValue);
-				 totalSize += 4 + varCharLength;
-				break;
-			default:
-				System.out.println("Ce type de la colonne invalide !!");
-				break;
-
-			}
-		}
-		return totalSize;
-	} catch (Exception e) {
-		System.err.println("Error in readFromBuffer: " + e.getMessage());
-		return -1; // Or another error value as needed
-	}
-}
-
-
 
 	/**
 
