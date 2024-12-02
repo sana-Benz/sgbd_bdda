@@ -28,7 +28,7 @@ public class RecordId {
   
   @Override
     public String toString() {
-        return "RecordId{" + "pageId=" + pageId + ", slotIdx=" + slotIdx + '}';
+        return '{' + "pageIdFichier = " + pageId.getFileIdx() + " pageIdx = "+ pageId.getPageIdx() + ", slotIdx=" + slotIdx + '}';
     }
     
   
