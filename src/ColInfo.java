@@ -3,12 +3,12 @@
 public class ColInfo {
 	private String ColName;
 	private ColmType typeCol;
-	private int lengthString;
+	private int lengthChar;
 	
-	public ColInfo(String ColName, ColmType typeCol, int lengthString) {
+	public ColInfo(String ColName, ColmType typeCol, int lengthChar) {
         this.ColName = ColName;
         this.typeCol = typeCol;
-        this.lengthString = lengthString;
+        this.lengthChar = lengthChar;
         
     }
 
@@ -22,8 +22,8 @@ public class ColInfo {
         return typeCol;
     }
 
-    public int getLengthString() {
-        return lengthString;
+    public int getLengthChar() {
+        return lengthChar;
     }
 
     
