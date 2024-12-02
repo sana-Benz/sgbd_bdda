@@ -10,8 +10,10 @@ public class Relation {
     private DiskManager disk;  // Référence à DiskManager
     private BufferManager buffer;  // Référence à BufferManager
 
-    // Modifiez le constructeur pour accepter config et buffer en paramètre
-    public Relation(String nomRelation, int nbCol, ArrayList<ColInfo> tableCols, DBConfig config, PageId headerPageId, DiskManager disk, BufferManager buffer) {
+    
+  
+	// Modifiez le constructeur pour accepter config et buffer en paramètre
+    public Relation(DBConfig config, String nomRelation, int nbCol, ArrayList<ColInfo> tableCols, PageId headerPageId, DiskManager disk, BufferManager buffer) {
         this.nomRelation = nomRelation;
         this.nbCol = nbCol;
         this.tableCols = tableCols;
