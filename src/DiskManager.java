@@ -33,15 +33,15 @@ public class DiskManager {
 
     } 
 
-    public String construireNomFichier(int index){
+    private String construireNomFichier(int index){
         return "F" + index +".rsdb" ; 
     }
 
-    public String construireCheminFichier(int index){ 
+    private String construireCheminFichier(int index){
         return config.getDbpath()+"/Bin_Data/"+construireNomFichier(index);
     }
  
-    public int nbPagesFichier(RandomAccessFile fichier) { // Calcule le nombre de pages qui existent/sont allouées dans le fichier
+    private int nbPagesFichier(RandomAccessFile fichier) { // Calcule le nombre de pages qui existent/sont allouées dans le fichier
         try {
             int nbPagesFichier = (int) (fichier.length() / config.getPageSize());
             return(nbPagesFichier);
