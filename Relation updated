@@ -3,8 +3,6 @@ package Projet_SGBD;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-
-
 public class Relation {
 
 	private String nomRelation;
@@ -14,15 +12,20 @@ public class Relation {
 
 	private PageId headerPageId; // Identifiant de la Header Page
     private DiskManager diskManager; // Gestionnaire de disque
+    private DBConfig config;
+    private BufferManager bufferManager; // Gestionnaire de Buffer
+     
+
 
    
-    public Relation(String nomRelation, int nbCol, List<String> columnNames, List<String> columnTypes) {
+    public Relation(String nomRelation, int nbCol, List<String> columnNames,DiskManager diskManager,BufferManager bufferManager, List<String> columnTypes,DBConfig config) {
 	   this.nomRelation = nomRelation;
 	   this.nbCol = nbCol;
 	   this.columnNames = columnNames;
 	   this.columnTypes = columnTypes;
 	   this.diskManager = diskManager;
-
+       this.bufferManager = bufferManager;
+       this.config = config; 
         // Allouer la Header Page au moment de la création
         this.headerPageId = diskManager.AllocPage();
         initializeHeaderPage();
@@ -37,7 +40,7 @@ public class Relation {
 		buffer.putInt(0, 0);
 
 		// Écrire la page dans le disque
-		diskManager.writePage(headerPageId, buffer.array());
+		diskManager.WritePage(headerPageId, buffer);
 }
 
    public String getNomRelation() {
@@ -47,6 +50,10 @@ public class Relation {
    public void setNomRelation(String nomRelation) {
 	   this.nomRelation = nomRelation;
    }
+   public void setHeaderPageId(PageId headerPageId) {
+    this.headerPageId = headerPageId;
+}
+
    
    public int getNbCol() {
 	   return nbCol;
@@ -82,27 +89,29 @@ public class Relation {
 	try {
 		// Étape 1 : Allouer une nouvelle page de données
 		PageId newPageId = diskManager.AllocPage();
+         //Create new page
+         
 
-		// Étape 2 : Lire la Header Page
-		byte[] headerPageData = diskManager.readPage(headerPageId);
-		ByteBuffer buffer = ByteBuffer.wrap(headerPageData);
+		// Étape 2 : Lire la Header Page via BufferManager
+        ByteBuffer headerBuffer = bufferManager.GetPage(headerPageId); // Lire la Header Page depuis le BufferManager
+
 
 		// Étape 3 : Récupérer le nombre de pages actuelles
-		int numPages = buffer.getInt(0);
+		int numPages = headerBuffer.getInt(0);
 
-		// Étape 4 : Calculer l'offset pour écrire les infos de la nouvelle page
+		// Étape 4 : Calculer l'offset pour savoir ou écrire les infos de la nouvelle page
 		int offset = 4 + (numPages * 12); // 4 octets pour le nombre de pages + 12 octets par page
 
 		// Ajouter les infos de la nouvelle page
-		buffer.putInt(offset, newPageId.getFileIdx()); // Écrire fileIdx
-		buffer.putInt(offset + 4, newPageId.getPageIdx()); // Écrire pageIdx
-		buffer.putInt(offset + 8, diskManager.getPageSize()); // Taille disponible initiale
+		headerBuffer.putInt(offset, newPageId.getFileIdx()); // Écrire fileIdx
+		headerBuffer.putInt(offset + 4, newPageId.getPageIdx()); // Écrire pageIdx
+        headerBuffer.putInt(offset + 8, config.getPageSize());     // Taille disponible initiale
 
 		// Mettre à jour le nombre de pages
-		buffer.putInt(0, numPages + 1);
+		headerBuffer.putInt(0, numPages + 1);
 
-		// Étape 5 : Écrire les changements dans la Header Page
-		diskManager.writePage(headerPageId, buffer.array());
+		// Étape 5 : Marquer la page comme modifiée (dirty) et libérer le buffer
+        bufferManager.FreePage(headerPageId, true); // true pour indiquer que la page est modifiée (dirty)
 
 	} catch (Exception e) {
 		System.err.println("Erreur lors de l'ajout d'une nouvelle page de données : " + e.getMessage());
