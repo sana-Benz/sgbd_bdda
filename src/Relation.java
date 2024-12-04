@@ -33,7 +33,11 @@ public class Relation {
         return tableCols;
     }
 
-    @Override
+	public PageId getHeaderPageId() {
+		return headerPageId;
+	}
+
+	@Override
     public String toString() {
         String TableInfo = "--" + nomRelation + "--";
         for (ColInfo col : tableCols) {
