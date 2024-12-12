@@ -9,6 +9,8 @@ public class DBManager {
    
     private Map<String, Map<String, Relation>> databases = new HashMap<>();
     private DBConfig config;
+	private String currentDatabase; // Variable pour stocker la base de données courante
+
 
     // Constructeur prenant une instance de DBConfig
     public DBManager(DBConfig config) {
@@ -25,6 +27,40 @@ public class DBManager {
 	    // Ajouter la base de données
 	    databases.put(nomBdd, new HashMap<>()); // Une base contient une liste de tables
 	    System.out.println("Base de données " + nomBdd + " créée avec succès !");
+	}
+
+	public void SetCurrentDatabase(String nomBdd) {
+        // Vérifier si la base de données existe
+        if (databases.containsKey(nomBdd)) {
+            currentDatabase = nomBdd; // Mettre à jour la base de données courante
+            System.out.println("Base de données courante définie sur : " + nomBdd);
+        } else {
+            System.out.println("Erreur : La base de données '" + nomBdd + "' n'existe pas.");
+        }
+    }
+
+	public void RemoveTableFromCurrentDatabase(String nomTable) {
+		// Vérifier si une base de données courante est définie
+		if (currentDatabase == null) {
+			System.out.println("Erreur : Aucune base de données courante n'est définie.");
+			return;
+		}
+	
+		// Vérifier si la table existe dans la base de données courante
+		Map<String, Relation> tables = databases.get(currentDatabase);
+		if (tables.containsKey(nomTable)) {
+			tables.remove(nomTable); // Supprimer la table
+			System.out.println("Table '" + nomTable + "' supprimée avec succès de la base de données '" + currentDatabase + "'.");
+		} else {
+			System.out.println("Erreur : La table '" + nomTable + "' n'existe pas dans la base de données courante.");
+		}
+	}
+	
+	public void RemoveDatabases() {
+		// Vider la map des bases de données
+		databases.clear(); // Supprime toutes les entrées de la map
+		currentDatabase = null; // Réinitialiser la base de données courante
+		System.out.println("Toutes les bases de données ont été supprimées avec succès.");
 	}
 
 	public void ListDatabases() {
