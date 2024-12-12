@@ -399,7 +399,11 @@ public class Relation {
 	}
 
 
-	// Méthode addDataPage
+	/**
+	 * Cette méthode devra rajouter une page de données « vide » au Heap File correspondant à la relation.
+	 * Elle doit donc allouer une nouvelle page via AllocPage du DiskManager et
+	 * actualiser le Page Directory en prenant en compte cette page
+	 */
 	public void addDataPage() {
 		try {
 			// Étape 1 : Allouer une nouvelle page de données

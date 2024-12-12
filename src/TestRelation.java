@@ -3,97 +3,75 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class TestRelation {
-	public static void main(String [] args) throws IOException {
-		// Initialisation de la configuration et du DiskManager et du BufferManager
+	public static void main(String[] args) throws IOException {
+		// Initialisation des composants de base
 		DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
 		DiskManager diskManager = new DiskManager(config);
 		BufferManager bufferManager = new BufferManager(config, diskManager);
 
-		// Allocation d'une Header Page et initialisation
+		// Allocation et initialisation de la Header Page
 		PageId headerPageId = diskManager.AllocPage();
+		System.out.println("Page allouée : Fichier " + headerPageId.getFileIdx() + ", Page " + headerPageId.getPageIdx());
 		ByteBuffer headerPage = ByteBuffer.allocate(config.getPageSize());
-		headerPage.putInt(1); // Une seule page de données pour commencer
-		headerPage.putInt(0); // FileIdx de la première page
-		headerPage.putInt(0); // PageIdx de la première page
-		headerPage.putInt(config.getPageSize() - 8); // Espace libre initial
+		headerPage.putInt(0); // Initialisation : 0 pages
 		diskManager.WritePage(headerPageId, headerPage);
 
-
-		// Création de la relation
+		// Création de la relation avec des colonnes
 		ArrayList<ColInfo> tableCols = new ArrayList<>();
 		tableCols.add(new ColInfo("Colonne1", ColmType.INT, 0));
 		tableCols.add(new ColInfo("Colonne2", ColmType.FLOAT, 0));
 		tableCols.add(new ColInfo("Colonne3", ColmType.CHAR, 15));
 		tableCols.add(new ColInfo("Colonne4", ColmType.VARCHAR, 25));
-		Relation relation = new Relation("table1", 4, tableCols,config,headerPageId,diskManager,bufferManager);
+		Relation relation = new Relation("table1", 4, tableCols, config, headerPageId, diskManager, bufferManager);
 
-		System.out.println("affichage des informations liées à la table");
-		System.out.println("Nom de la table : " + relation.getNomRelation());
-		System.out.println("Nombre de colonnes : " + relation.getNbCol());
-		
-		ArrayList<ColInfo> colonnes = relation.getTableCols();
-		for(int i=0; i<relation.getNbCol(); i++) {
-			System.out.println("Nom de la colonne : " + colonnes.get(i).getNameCol());
-	        System.out.println("Type de la colonne : " + colonnes.get(i).getTypeCol());
-	        System.out.println("Taille de la colonne : " + colonnes.get(i).getLengthChar());
-	        
-		}
-		System.out.println(relation.toString());
-
-		// Test 6: addDataPage
-		System.out.println("Test 6: Ajouter une Data Page");
+		// Test 1 : Ajout de pages de données
+		System.out.println("Test 1: Ajout de Data Pages");
 		relation.addDataPage();
-		System.out.println("Data Pages après ajout : " + relation.getDataPages().size());
+		relation.addDataPage();
+		ArrayList<PageId> dataPages = relation.getDataPages();
+		System.out.println("Pages de données après ajout : " + dataPages.size());
 
-		// Test 7: getFreeDataPageId
-		System.out.println("Test 7: Recherche de page avec espace libre");
+		// Test 2 : Insertion de records
+		System.out.println("Test 2: Insertion de records");
+		Record record = new Record(relation, null);
+		record.getValeursRec().add("42");        // INT
+		record.getValeursRec().add("3.14");      // FLOAT
+		record.getValeursRec().add("HelloWorld"); // CHAR (15)
+		record.getValeursRec().add("DynamicString"); // VARCHAR (25)
+
+		// Recherche d'une page avec de l'espace libre
 		PageId freePage = relation.getFreeDataPageId(100);
 		if (freePage != null) {
-			System.out.println("Page trouvée : FileIdx = " + freePage.getFileIdx() + ", PageIdx = " + freePage.getPageIdx());
+			RecordId recordId = relation.writeRecordToDataPage(record, freePage);
+			System.out.println("Record inséré avec succès à : FileIdx = " + recordId.getPageId().getFileIdx() + ", PageIdx = " + recordId.getPageId().getPageIdx());
 		} else {
-			System.out.println("Aucune page avec assez d'espace libre");
+			System.out.println("Aucune page avec assez d'espace libre pour insérer le record.");
 		}
 
-		// Test 8: Écriture et lecture de record
-		System.out.println("Test 8: Écriture et lecture de record");
-		PageId dataPageId = diskManager.AllocPage(); // Allocation d'une Data Page
-		ByteBuffer dataPage = ByteBuffer.allocate(config.getPageSize());
-		diskManager.WritePage(dataPageId, dataPage);
-
-		// Création d'un RecordId et d'un Record
-		RecordId recordId = new RecordId(dataPageId, 0); // Création d'un RecordId avec slotIdx = 0
-		Record record = new Record(relation, recordId); // Création du Record avec RecordId
-
-		// Ajout des valeurs au Record
-		ArrayList<String> valeursRec = new ArrayList<>();
-		valeursRec.add("123");
-		valeursRec.add("45.67");
-		valeursRec.add("TestCHAR");
-		valeursRec.add("TestVARCHAR");
-		record.setValeursRec(valeursRec);
-
-		// Écriture du record dans la Data Page
-		int bytesWritten = relation.writeToBuffer(record, dataPage, 8); // Offset 8 pour laisser l'espace des métadonnées
-		System.out.println("Bytes écrits : " + bytesWritten);
-		diskManager.WritePage(dataPageId, dataPage);
-
-		// Lecture du record
-		Record recordRead = new Record(relation, new RecordId(dataPageId, 0)); // Utilisation du RecordId pour la lecture
-		diskManager.ReadPage(dataPageId, dataPage);
-		int bytesRead = relation.readFromBuffer(recordRead, dataPage, 8);
-		System.out.println("Bytes lus : " + bytesRead);
-		System.out.println("Valeurs lues : " + recordRead.getValeursRec());
-
-		// Test 9: getAllRecords
-		System.out.println("Test 9: getAllRecords");
+		// Test 3 : Récupération de tous les records
+		System.out.println("Test 3: Récupération de tous les records");
 		ArrayList<Record> allRecords = relation.getAllRecords();
-		System.out.println("Nombre de records : " + allRecords.size());
+		System.out.println("Nombre total de records : " + allRecords.size());
+		for (Record rec : allRecords) {
+			System.out.println("Record récupéré : " + rec.getValeursRec());
+		}
 
-		// Test 10: getRecordsInDataPage
-		System.out.println("Test 10: Records dans une Data Page");
-		ArrayList<Record> recordsInPage = relation.getRecordsInDataPage(dataPageId);
-		System.out.println("Nombre de records dans la page : " + recordsInPage.size());
-		
+		// Test 4 : Récupération des records dans une page spécifique
+		System.out.println("Test 4: Récupération des records dans une page spécifique");
+		if (!dataPages.isEmpty()) {
+			ArrayList<Record> recordsInPage = relation.getRecordsInDataPage(dataPages.get(0));
+			System.out.println("Nombre de records dans la page : " + recordsInPage.size());
+			for (Record rec : recordsInPage) {
+				System.out.println("Record dans la page : " + rec.getValeursRec());
+			}
+		} else {
+			System.out.println("Aucune page de données pour tester la récupération des records.");
+		}
+
+		// Test 5 : Ajout et validation de nouvelles pages
+		System.out.println("Test 5: Ajout de nouvelles pages et validation");
+		relation.addDataPage();
+		dataPages = relation.getDataPages();
+		System.out.println("Nombre total de pages après ajout : " + dataPages.size());
 	}
-
 }

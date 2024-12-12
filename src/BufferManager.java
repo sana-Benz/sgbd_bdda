@@ -143,13 +143,18 @@ public class BufferManager {
 	 * méthode, le BufferManager repart avec des buffers où il n’y a aucun contenu de chargé
 	 * comme dans son état initial après appel du constructeur.
 	 */
-	public void flushBuffers() {
-            for (Buffer buffer : bufferPool) {
-                if (buffer.getDirty()) {
-                    diskManager.WritePage(buffer.getPageId(), buffer.getData());
-                }
-                buffer.reset();  
-            } 
-        }
+	public void flushBuffers() throws Exception{
+		for (Buffer buffer : bufferPool) {
+			if (buffer.getPinCount()>0){
+				throw new Exception("Le flush des pages est interrompu : La page "+buffer.getPageId().getPageIdx() +" du fichier " +
+						buffer.getPageId().getFileIdx()+ " est encore en cours d'utilisation");
+			}
+			if (buffer.getDirty()) {
+				diskManager.WritePage(buffer.getPageId(), buffer.getData());
+			}
+			buffer.reset();
+			System.out.println("Le flush a bien été effectué");
+		}
+	}
 } 
 

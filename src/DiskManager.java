@@ -167,7 +167,9 @@ public class DiskManager {
      * @param pageId
      */
      public void DeallocPage (PageId pageId){
-         //Cette méthode doit désallouer une page, et la rajouter dans la liste des pages «libres»
+         // effacer le contenu de la page
+         ByteBuffer emptyBuffer = ByteBuffer.allocate(config.getPageSize()); // Buffer vide rempli de zéros
+         WritePage(pageId, emptyBuffer);
          pagesLibres.add(pageId.getPageIdx());
          SaveState();
      
@@ -182,6 +184,8 @@ public class DiskManager {
         //on sauvegarde la liste des pages vides
         String cheminFichier = config.getDbpath() + "/dm.save"; //Le fichier s’appellera dm.save et sera placé à la racine dossier dbpath .?
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(cheminFichier))) {
+            writer.write("IndexFichierCourant:" + indexFichierCourant);
+            writer.newLine();
             for (Integer pageIdx : pagesLibres) {
                 writer.write(pageIdx.toString());
                 writer.newLine();
