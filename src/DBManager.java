@@ -3,12 +3,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DBManager {
-   
-    private Map<String, Map<String, Relation>> databases = new HashMap<>();
+	private List<Database> databases;
     private DBConfig config;
+	private Database currentDatabase;
 
     // Constructeur prenant une instance de DBConfig
     public DBManager(DBConfig config) {
