@@ -4,6 +4,7 @@ public enum ColmType {
 	    FLOAT,
 	    CHAR,
 	    VARCHAR,
+	    REAL,
 	    
 
 }

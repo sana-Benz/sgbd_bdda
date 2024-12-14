@@ -47,8 +47,14 @@ public class SGBD {
         bufferManager.flushBuffers();
     }
     
-    public void ProcessCreateDatabaseCommand(String nomBdd) {
-        dbManager.CreateDatabase(nomBdd);
+    public void ProcessCreateDatabaseCommand(String commande) {
+        String[] parts = commande.split(" "); // Diviser la commande en parties
+        if (parts.length < 3) {
+            System.out.println("Commande invalide.");
+            return;
+        }
+        String nomBdd = parts[2]; // Récupérer le nom de la base de données
+        dbManager.CreateDatabase(nomBdd); // Passer uniquement le nom à la méthode
     }
     
     // Méthode pour définir la base de données courante
@@ -74,6 +80,13 @@ public class SGBD {
     
     // Méthode pour supprimer toutes les bases de données
     public void ProcessDropDatabasesCommand() {
+        System.out.println("Nombre de bases de données avant suppression : " + dbManager.databases.size());
+        if (dbManager.databases.isEmpty()) {
+            System.out.println("Aucune base de données à supprimer.");
+            return;
+        }
+
+        // Supprimer toutes les bases de données
         dbManager.RemoveAllDatabases();
         System.out.println("Toutes les bases de données ont été supprimées avec succès !");
     }
@@ -85,33 +98,44 @@ public class SGBD {
     
  // Méthode pour créer une table
     public void ProcessCreateTableCommand(String commande) {
-        String[] parts = commande.split(" ");
-        
-        // Vérifiez que la commande contient suffisamment d'arguments
-        if (parts.length < 3) {
+        // Vérifiez que la commande commence par "create table"
+        if (!commande.startsWith("create table")) {
             System.out.println("Commande invalide : " + commande);
             return;
         }
 
+        // Extraire le nom de la table et les colonnes
+        String[] parts = commande.split("\\s+"); // Diviser par espaces
         String nomTable = parts[2]; // Nom de la table
+
+        // Vérifiez que la commande contient des colonnes
+        if (parts.length < 4 || !commande.contains("(")) {
+            System.out.println("Définition de colonne invalide : " + commande);
+            return;
+        }
+
+        // Extraire la partie entre parenthèses
+        String colonnesPart = commande.substring(commande.indexOf("(") + 1, commande.indexOf(")"));
+        String[] colonnesDef = colonnesPart.split(","); // Diviser par virgule
+
         ArrayList<ColInfo> colonnes = new ArrayList<>();
 
-        // Commencez à partir de l'index 3 pour les colonnes
-        for (int i = 3; i < parts.length; i += 2) { // Incrémentez de 2 pour obtenir le nom et le type
-            // Vérifiez que nous avons un nom de colonne et un type
-            if (i + 1 >= parts.length) {
-                System.out.println("Définition de colonne invalide : " + parts[i]);
+        // Analyser chaque définition de colonne
+        for (String colDef : colonnesDef) {
+            String[] colParts = colDef.trim().split("\\s+"); // Diviser par espaces
+            if (colParts.length < 2) {
+                System.out.println("Définition de colonne invalide : " + colDef);
                 return;
             }
 
-            String nomCol = parts[i]; // Nom de la colonne
+            String nomCol = colParts[0]; // Nom de la colonne
             ColmType typeCol;
 
             // Vérifiez que le type de colonne est valide
             try {
-                typeCol = ColmType.valueOf(parts[i + 1].toUpperCase()); // Utilisez parts[i + 1] pour le type
+                typeCol = ColmType.valueOf(colParts[1].toUpperCase()); // Utilisez colParts[1] pour le type
             } catch (IllegalArgumentException e) {
-                System.out.println("Type de colonne invalide : " + parts[i + 1]);
+                System.out.println("Type de colonne invalide : " + colParts[1]);
                 return;
             }
 
@@ -120,7 +144,7 @@ public class SGBD {
 
         dbManager.CreateTable(nomTable, colonnes);
         System.out.println("Table " + nomTable + " créée avec succès !");
-    }
+    } 
     
  // Méthode pour supprimer une table
     public void ProcessDropTableCommand(String nomTable) {
@@ -159,11 +183,21 @@ public class SGBD {
                 break;
             } else if (commande.startsWith("create database")) {
                 ProcessCreateDatabaseCommand(commande);
-            } else if (commande.startsWith("set database")) {
-                ProcessSetDatabaseCommand(commande.split(" ")[2]);
+            }  else if (commande.startsWith("set database")) {
+                String[] parts = commande.split(" ");
+                if (parts.length < 3) { // Vérifiez que l'index 2 existe
+                    System.out.println("Commande invalide : " + commande);
+                    continue; // Passez à la prochaine itération
+                }
+                ProcessSetDatabaseCommand(parts[2]);
             } else if (commande.startsWith("drop database")) {
-                ProcessDropDatabaseCommand(commande.split(" ")[2]);
-            } else if (commande.equalsIgnoreCase("drop databases")) {
+                String[] parts = commande.split(" ");
+                if (parts.length < 3) { // Vérifiez que l'index 2 existe
+                    System.out.println("Commande invalide : " + commande);
+                    continue; // Passez à la prochaine itération
+                }
+                ProcessDropDatabaseCommand(parts[2]);
+            } else if (commande.equalsIgnoreCase("DROP DATABASES")) { //faut lecrire en majuscule
                 ProcessDropDatabasesCommand();
             } else if (commande.equalsIgnoreCase("list databases")) {
                 ProcessListDatabasesCommand();
