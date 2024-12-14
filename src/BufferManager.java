@@ -1,4 +1,5 @@
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.LinkedList;
 
 public class BufferManager {
@@ -14,19 +15,17 @@ public class BufferManager {
         this.currentPolicy = config.getBm_policy(); // Récupération de la politique depuis DBConfig
     }
 
-    private Buffer selectbufferToReplace() {
-    	Buffer bufferToReplace=null;
-    	if(currentPolicy.equals("LRU")) { 
-    		bufferToReplace=bufferPool.getFirst();
-    	}else if (currentPolicy.equals("MRU")) {
-    		bufferToReplace=bufferPool.getLast();
-    	}
-    //si le buffer est modifié, on l'écrit sur le disque 
-    	if(bufferToReplace.getDirty()) {
-    		diskManager.WritePage(bufferToReplace.getPageId(), bufferToReplace.getData());
-    	}
-    	return bufferToReplace;// Retourne le buffer qui doit etre remplacé
-    }
+	private Buffer selectBufferToReplace() {
+		for (Buffer buffer : bufferPool) {
+			if (buffer.getPinCount() == 0) {
+				logBufferPoolState();
+				return buffer;
+			}
+		}
+		throw new IllegalStateException("No buffer available for replacement. All buffers are pinned.");
+	}
+
+
 
 	/**
 	 *Cette méthode retourne un des buffers gérés par le BufferManager, rempli avec le contenu de la page
@@ -34,59 +33,80 @@ public class BufferManager {
 	 * @param pageId id de la page à charger
 	 * @return ByteBuffer qui contient le contenu de la page chargée
 	 */
-	public ByteBuffer GetPage(PageId pageId) {
-        // Recherche si la page est déjà chargée dans un buffer
-        for (Buffer buffer : bufferPool) {
-            if (buffer.getPageId().equals(pageId)) {   
-            	buffer.incrementPinCount(); 
-                updateBufferOrder(buffer);
-                return buffer.getData(); // Retourne le buffer
-            }
-        }
-    
-        //si la page n'est pas dans les buffers et que le pool est plein
-        if(bufferPool.size()>=config.getBm_buffercount()) {
-        	Buffer bufferToReplace= selectbufferToReplace();
-        	
-        	if(bufferToReplace.getDirty()) {
-        		diskManager.WritePage(bufferToReplace.getPageId(), bufferToReplace.getData());	
-        	}
-        	
-        	bufferToReplace.setPageId(pageId);
-        	ByteBuffer newData= loadPageFromDisk(pageId);
-        	bufferToReplace.setData(newData);// on met à jour les données du buffer
-        	bufferToReplace.reset();//rénitialise le pin_count et le dirty flag
-        	updateBufferOrder(bufferToReplace);
-        		
-        	return bufferToReplace.getData();
-        }
-        //Si le pool n'est pas vide, on charge la page depuis le disque 
-        ByteBuffer newBuffer = loadPageFromDisk(pageId);
-        Buffer newBufferObj= new Buffer(pageId, newBuffer);
-        bufferPool.add(newBufferObj);
-        //updateBufferOrder(newBufferObj);
-        newBufferObj.incrementPinCount();
-        
-        return newBufferObj.getData();
-        
-    }
-        
-    private ByteBuffer loadPageFromDisk(PageId pageId) {
+	public ByteBuffer GetPage(PageId pageId) throws Exception {
+		// Log the page access attempt
+		System.out.println("Getting Page: FileIdx = " + pageId.getFileIdx() + ", PageIdx = " + pageId.getPageIdx());
+
+		// Search for the page in the buffer pool
+		for (Buffer buffer : bufferPool) {
+			if (buffer.getPageId().equals(pageId)) {
+				buffer.incrementPinCount(); // Increment pin count for buffer
+				updateBufferOrder(buffer);  // Update buffer order for replacement policy
+				ByteBuffer existingBuffer = buffer.getData();
+				existingBuffer.position(0); // Reset position for reading
+				existingBuffer.limit(existingBuffer.capacity()); // Ensure the limit is correct
+				System.out.println("Buffer Retrieved Content: " + Arrays.toString(Arrays.copyOf(existingBuffer.array(), 16)));
+				logBufferPoolState(); // Log the buffer pool state for debugging
+				return existingBuffer; // Return the existing buffer
+			}
+		}
+
+		// If the page is not in the buffer pool and the pool is full
+		if (bufferPool.size() >= config.getBm_buffercount()) {
+			Buffer bufferToReplace = selectBufferToReplace(); // Select a buffer for replacement
+
+			// Check if a buffer is available for replacement
+			if (bufferToReplace == null) {
+				throw new IllegalStateException("No buffer available for replacement.");
+			}
+
+			// If the buffer is dirty, write its content back to disk
+			if (bufferToReplace.getDirty()) {
+				System.out.println("Writing dirty buffer to disk: " + bufferToReplace.getPageId());
+				diskManager.WritePage(bufferToReplace.getPageId(), bufferToReplace.getData());
+			}
+
+			// Replace the buffer with the new page
+			bufferToReplace.setPageId(pageId);
+			ByteBuffer newData = loadPageFromDisk(pageId); // Load the new page from disk
+			bufferToReplace.setData(newData);             // Update buffer data
+			bufferToReplace.reset();                      // Reset pin_count and dirty flag
+			updateBufferOrder(bufferToReplace);           // Update buffer order for replacement policy
+			System.out.println("Buffer Retrieved Content (New Replacement): " + Arrays.toString(Arrays.copyOf(newData.array(), 16)));
+			logBufferPoolState(); // Log the buffer pool state for debugging
+			return bufferToReplace.getData(); // Return the new buffer's data
+		}
+
+		// If the pool is not full, load the page from disk
+		ByteBuffer newBuffer = loadPageFromDisk(pageId);
+		Buffer newBufferObj = new Buffer(pageId, newBuffer);
+		bufferPool.add(newBufferObj); // Add the new buffer to the pool
+		updateBufferOrder(newBufferObj); // Update buffer order for replacement policy
+		newBufferObj.incrementPinCount(); // Increment pin count for the new buffer
+		System.out.println("Buffer Retrieved Content (New Addition): " + Arrays.toString(Arrays.copyOf(newBuffer.array(), 16)));
+		logBufferPoolState(); // Log the buffer pool state for debugging
+		return newBufferObj.getData(); // Return the new buffer's data
+	}
+
+
+
+
+
+	private ByteBuffer loadPageFromDisk(PageId pageId) {
 		ByteBuffer buffer = ByteBuffer.allocate(config.getPageSize());
 		diskManager.ReadPage(pageId, buffer);// on utilise diskManager pour lire la  page 
 		buffer.flip();// réinitialise la position
 		return buffer;  
 	}
 
-	private void updateBufferOrder(Buffer buffer) {
-		if(currentPolicy.equals("LRU")) {
-			bufferPool.remove(buffer);//supprime l'ancien
-			bufferPool.addLast(buffer);// ajoute a la fin pour dire qu'il a été utilisé récemment 
-		}else if (currentPolicy.equals("MRU")) {
-			bufferPool.remove(buffer);// supprime l'ancien
-			bufferPool.addFirst(buffer);//ajoute au début et devient le plus récemment utilisé
-		}
+	public void updateBufferOrder(Buffer buffer) {
+		bufferPool.remove(buffer);
+		bufferPool.add(buffer); // Move to the end (LRU policy)
+		System.out.println("Buffer pool updated for PageId: " + buffer.getPageId());
 	}
+
+
+
 
 	/**
 	 * Cette méthode décrémente le pin_count et actualise le flag dirty (et aussi
@@ -96,30 +116,33 @@ public class BufferManager {
 	 * @throws Exception
 	 */
 	public void FreePage(PageId pageId, boolean valdirty) throws Exception {
-	    // Rechercher si la page est déjà chargée dans un buffer
-	    for (Buffer buffer : bufferPool) {
-	        if (buffer.getPageId().equals(pageId)) {
-	            // Décrémenter le pin_count
-	            buffer.decrementPinCount();
- 
-	            // Si le pin_count devient inférieur à 0, lever une exception
-	            if (buffer.getPinCount() < 0) {
-	                throw new Exception("Pin count ne peut pas être négatif.");
-	            }
+		// Search for the page in the buffer pool
+		for (Buffer buffer : bufferPool) {
+			if (buffer.getPageId().equals(pageId)) {
+				// Decrement pin count
+				buffer.decrementPinCount();
 
-	            // Mettre à jour le flag dirty directement
-	            if (valdirty) {
-	                buffer.setDirty(true); // Modifie directement l'attribut dirty
-	            }
+				// Pin count cannot go below 0
+				if (buffer.getPinCount() < 0) {
+					throw new Exception("Pin count cannot be negative for page: " + pageId);
+				}
 
-	            // Si le pin_count est à 0, cette page peut être remplacée
-	            return;
-	        } 
-	    }
+				// Update the dirty flag if needed
+				if (valdirty) {
+					buffer.setDirty(true);
+				}
+				System.out.println("Page unpinned successfully: " + pageId);
+				logBufferPoolState();
+				return;
+			}
+		}
 
-	    // Si la page n'est pas trouvée dans le buffer pool, lever une exception
-	    throw new Exception("Page " + pageId + " non trouvée dans le buffer pool.");
+		// If the page is not found, indicate it was not in the buffer pool
+		throw new Exception("Page " + pageId + " not found in the buffer pool.");
 	}
+
+
+
 
 	/**
 	 * Cette méthode change la politique de remplacement courante, et a la priorité par
@@ -143,18 +166,51 @@ public class BufferManager {
 	 * méthode, le BufferManager repart avec des buffers où il n’y a aucun contenu de chargé
 	 * comme dans son état initial après appel du constructeur.
 	 */
-	public void flushBuffers() throws Exception{
+	public void flushBuffers() throws Exception {
 		for (Buffer buffer : bufferPool) {
-			if (buffer.getPinCount()>0){
-				throw new Exception("Le flush des pages est interrompu : La page "+buffer.getPageId().getPageIdx() +" du fichier " +
-						buffer.getPageId().getFileIdx()+ " est encore en cours d'utilisation");
-			}
-			if (buffer.getDirty()) {
+			if (buffer.getDirty() && buffer.getPinCount() == 0) {
 				diskManager.WritePage(buffer.getPageId(), buffer.getData());
+				buffer.setDirty(false);
+				System.out.println("Flushed buffer for PageId: " + buffer.getPageId());
+				logDirtyBuffersState();
+			} else if (buffer.getPinCount() > 0) {
+				System.err.println("Cannot flush buffer for PageId: " + buffer.getPageId() + " - still pinned.");
+				throw new Exception("Cannot flush buffers: Page " + buffer.getPageId() + " is still pinned.");
 			}
-			buffer.reset();
-			System.out.println("Le flush a bien été effectué");
 		}
 	}
+
+
+
+
+	public void MarkDirty(PageId pageId) {
+		for (Buffer buffer : bufferPool) {
+			if (buffer.getPageId().equals(pageId)) {
+				buffer.setDirty(true);
+				System.out.println("Page marked as dirty: " + pageId);
+				return;
+			}
+		}
+		throw new IllegalStateException("Buffer for PageId not found: " + pageId);
+	}
+
+	private void logBufferPoolState() {
+		System.out.println("Current Buffer Pool State:");
+		for (Buffer buffer : bufferPool) {
+			System.out.println("PageId: " + buffer.getPageId() + ", PinCount: " + buffer.getPinCount() + ", Dirty: " + buffer.getDirty());
+		}
+		System.out.println("End of Buffer Pool State.");
+	}
+
+	private void logDirtyBuffersState() {
+		System.out.println("Dirty Buffers State:");
+		for (Buffer buffer : bufferPool) {
+			if (buffer.getDirty()) {
+				System.out.println("PageId: " + buffer.getPageId() + ", PinCount: " + buffer.getPinCount());
+			}
+		}
+		System.out.println("End of Dirty Buffers State.");
+	}
+
 } 
 
