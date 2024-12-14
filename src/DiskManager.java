@@ -7,19 +7,24 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DiskManager {
     private DBConfig config;
     private List<Integer> pagesLibres= new ArrayList<>(); // Liste des pages libres d'un fichier
     private int nbMaxPages; // nombre maximal de pages dans un fichier
     private static int indexFichierCourant = 0; 
+    private Map<String, List<PageId>> pagesAllouees; // Map pour suivre les pages allouées par table
+
 
  
     public DiskManager(DBConfig config) throws IOException {
         this.config = config;
         this.nbMaxPages = config.getDm_maxfilesize() / config.getPageSize();
-        
+        this.pagesAllouees = new HashMap<>(); // Initialiser la map
+
         // Création du dossier DB s'il n'existe pas
         File dbDirectory = new File(config.getDbpath());
         if (!dbDirectory.exists()) {
@@ -88,6 +93,9 @@ public class DiskManager {
        }
 		return null;
     }
+
+    
+
 
     private int calculOffset(int pageIdx) { // Calcule l'offset d'une page dans le fichier
 
@@ -162,16 +170,35 @@ public class DiskManager {
              } 
     }
 
-    /**
+   
+      /**
      * Cette méthode désalloue une page, et la rajoute dans la liste des pages «libres».
      * @param pageId
      */
      public void DeallocPage (PageId pageId){
-         //Cette méthode doit désallouer une page, et la rajouter dans la liste des pages «libres»
-         pagesLibres.add(pageId.getPageIdx());
-         SaveState();
-     
-     }
+        // effacer le contenu de la page
+        ByteBuffer emptyBuffer = ByteBuffer.allocate(config.getPageSize()); // Buffer vide rempli de zéros
+        WritePage(pageId, emptyBuffer);
+        pagesLibres.add(pageId.getPageIdx());
+        SaveState();
+    
+    }
+    // Méthode pour désallouer les pages pour une table
+    public void DeallocPagesForTable(String nomTable) {
+    List<PageId> pages = pagesAllouees.get(nomTable);
+    if (pages == null || pages.isEmpty()) {
+        System.out.println("Aucune page à désallouer pour la table " + nomTable + ".");
+        return;
+    }
+
+    for (PageId pageId : pages) {
+        DeallocPage(pageId); // Appel de la méthode DeallocPage pour chaque page
+    }
+
+    pagesAllouees.remove(nomTable); // Supprimer les entrées de la map
+    System.out.println("Désallocation des pages pour la table " + nomTable + " effectuée avec succès !");
+}
+
 
     /**
      * Cette méthode sauvegarde dans un fichier la liste des pages
