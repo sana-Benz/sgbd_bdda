@@ -135,16 +135,41 @@ public class SGBD {
             try {
                 typeCol = ColmType.valueOf(colParts[1].toUpperCase()); // Utilisez colParts[1] pour le type
             } catch (IllegalArgumentException e) {
-                System.out.println("Type de colonne invalide : " + colParts[1]);
-                return;
+                // Vérifiez si c'est un type CHAR ou VARCHAR avec longueur
+                if (colParts[1].toUpperCase().startsWith("CHAR") || colParts[1].toUpperCase().startsWith("VARCHAR")) {
+                    // Vérifiez que la définition de colonne contient une longueur
+                    if (colParts.length < 2 || !colParts[1].contains("(") || !colParts[1].contains(")")) {
+                        System.out.println("Longueur manquante pour le type " + colParts[1] + " : " + colDef);
+                        return;
+                    }
+                    // Extraire la longueur
+                    String lengthStr = colParts[1].substring(colParts[1].indexOf("(") + 1, colParts[1].indexOf(")"));
+                    int length = Integer.parseInt(lengthStr);
+                    typeCol = ColmType.valueOf(colParts[1].substring(0, colParts[1].indexOf("(")).toUpperCase());
+                    colonnes.add(new ColInfo(nomCol, typeCol, length));
+                    continue;
+                } else {
+                    System.out.println("Type de colonne invalide : " + colParts[1]);
+                    return;
+                }
             }
 
-            colonnes.add(new ColInfo(nomCol, typeCol, 0));
+            int length = 0; // Initialiser la longueur à 0
+            if (typeCol == ColmType.CHAR || typeCol == ColmType.VARCHAR) {
+                // Vérifiez que la définition de colonne contient une longueur
+                if (colParts.length < 3 || !colParts[2].matches("\\d+")) {
+                    System.out.println("Longueur manquante pour le type " + typeCol + " : " + colDef);
+                    return;
+                }
+                length = Integer.parseInt(colParts[2]); // Récupérer la longueur
+            }
+
+            colonnes.add(new ColInfo(nomCol, typeCol, length)); // Passer la longueur
         }
 
         dbManager.CreateTable(nomTable, colonnes);
         System.out.println("Table " + nomTable + " créée avec succès !");
-    } 
+    }
     
  // Méthode pour supprimer une table
     public void ProcessDropTableCommand(String nomTable) {
@@ -197,11 +222,11 @@ public class SGBD {
                     continue; // Passez à la prochaine itération
                 }
                 ProcessDropDatabaseCommand(parts[2]);
-            } else if (commande.equalsIgnoreCase("DROP DATABASES")) { //faut lecrire en majuscule
+            } else if (commande.equalsIgnoreCase("DROP DATABASES")) {  //faut lecrire en majuscule
                 ProcessDropDatabasesCommand();
             } else if (commande.equalsIgnoreCase("list databases")) {
                 ProcessListDatabasesCommand();
-            } else if (commande.startsWith("create table")) {
+            } else if (commande.startsWith("create table")) { //faut ecrire comme ça: create table Tab2 (C4 VARCHAR 5, C2 CHAR 255)
                 ProcessCreateTableCommand(commande);
             } else if (commande.startsWith("drop table")) {
                 ProcessDropTableCommand(commande.split(" ")[2]);
