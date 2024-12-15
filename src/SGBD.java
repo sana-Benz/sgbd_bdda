@@ -1,4 +1,14 @@
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.json.simple.parser.ParseException;
 import java.util.*;
 
@@ -229,6 +239,51 @@ public class SGBD {
         relation.addRecord(record); // Méthode à implémenter dans Relation
         System.out.println("Record inséré avec succès.");
     }
+    
+    public void processBulkInsertCommand(String command) {
+        // Exemple de commande : BULKINSERT INTO nomRelation nomFichier.csv
+        String[] parts = command.split(" ");
+        if (parts.length != 4 || !parts[0].equals("BULKINSERT") || !parts[1].equals("INTO")) {
+            System.out.println("Commande invalide.");
+            return;
+        }
+
+        String relationName = parts[2];
+        String fileName = parts[3];
+
+        // Vérifiez si la relation existe
+        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
+        if (relation == null) {
+            System.out.println("La relation " + relationName + " n'existe pas.");
+            return;
+        }
+
+        // Lire le fichier CSV
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(","); // Supposons que les valeurs sont séparées par des virgules
+                if (values.length != relation.getNbCol()) {
+                    System.out.println("Le nombre de valeurs ne correspond pas au nombre de colonnes pour la ligne : " + line);
+                    continue; // Passer à la ligne suivante
+                }
+
+                // Créer un nouvel enregistrement
+                Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), 0));
+                ArrayList<String> valeursRec = new ArrayList<>();
+                for (String value : values) {
+                    valeursRec.add(value.trim().replace("\"", ""));
+                }
+                record.setValeursRec(valeursRec);
+                relation.addRecord(record); // Méthode à implémenter dans Relation
+            }
+            System.out.println("Insertion en bloc terminée avec succès !");
+        } catch (IOException e) {
+            System.out.println("Erreur lors de la lecture du fichier : " + e.getMessage());
+        }
+    }
+    
+    
     public void processSelectCommand(String command) {
         // Exemple de commande : SELECT aliasRel.colp1, aliasRel.colp2 FROM nomRelation aliasRel [WHERE C1 AND C2 ...]
         String[] parts = command.split(" ");

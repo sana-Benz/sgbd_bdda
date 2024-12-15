@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
@@ -171,7 +172,7 @@ public void CreateTable(String nomTable, ArrayList<ColInfo> colonnes) {
         diskManager.WritePage(headerPageId, headerPage); // Écrire la Header Page sur le disque
 
         // Créer la relation (table)
-        Relation relation = new Relation(nomTable, colonnes.size(), colonnes, config, headerPageId, diskManager, bufferManager);
+        Relation relation = new Relation(nomTable, colonnes.size(), colonnes, config,  diskManager, bufferManager);
         currentDatabase.addTable(relation); // Ajouter la table à la base de données courante
         System.out.println("Table " + nomTable + " ajoutée à la base de données " + currentDatabase.getNom() + ".");
     } catch (IOException e) {

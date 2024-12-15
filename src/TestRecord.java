@@ -27,7 +27,7 @@ public class TestRecord {
 		tableCols.add(new ColInfo("Colonne2", ColmType.FLOAT, 0));
 		tableCols.add(new ColInfo("Colonne3", ColmType.CHAR, 15));
 		tableCols.add(new ColInfo("Colonne4", ColmType.VARCHAR, 25));
-		Relation relation = new Relation("table1", 4, tableCols, config, headerPageId,diskManager,bufferManager);
+		Relation relation = new Relation("table1", 4, tableCols, config, diskManager,bufferManager);
 
 		//création d'un record
 		RecordId recordId = new RecordId(dataPageId,0);
@@ -65,8 +65,8 @@ public class TestRecord {
 				System.err.println("Mismatch at Colonne" + (i + 1));
 			}
 		}
-		
-		
+
+
 	}
 
 }
