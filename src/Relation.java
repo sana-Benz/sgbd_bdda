@@ -396,11 +396,13 @@ public class Relation {
 		try {
 			System.out.println("load headerPage pour ajouter une page");
 			ByteBuffer headerBuffer = buffer.GetPage(headerPageId);
+			Buffer headerPageBUFFER = new Buffer(headerPageId,headerBuffer);
 			int numPages = headerBuffer.getInt(0); // Read the current number of data pages
 			System.out.println("Nombre actuel de pages de données dans headerpage avant ajout : " + numPages);
 			System.out.println("allouer une nouvelle datapage");
 			PageId newPageId = disk.AllocPage();
 			ByteBuffer dataPageBuffer = buffer.GetPage(newPageId);
+			Buffer dataPageBUFFER = new Buffer(newPageId,dataPageBuffer);
 			dataPageBuffer.clear();
 			dataPageBuffer.putInt(dataPageBuffer.capacity()-4,0); // Free space starts at 0
 			dataPageBuffer.putInt(dataPageBuffer.capacity()-8,0); // Number of records (M) initialized to 0
@@ -418,9 +420,6 @@ public class Relation {
 			System.out.println("Nombre de pages de données incrémenté à : " + numPagesIncremente);
 			System.out.println("nouvelle position pour la prochaine page dans headerPage "+ (4 + numPagesIncremente * 12) );
 
-			// Mark both pages as dirty
-			buffer.MarkDirty(headerPageId);
-			buffer.MarkDirty(newPageId);
 
 			// Free the pages after use
 			buffer.FreePage(headerPageId, true);
@@ -428,6 +427,8 @@ public class Relation {
 			System.out.println("Pages libérées : HeaderPage (" + headerPageId + ") et DataPage (" + newPageId + ")");
 
 			buffer.flushBuffers();
+			disk.WritePage(headerPageId,headerBuffer);
+			disk.WritePage(newPageId,dataPageBuffer);
 
 			System.out.println("helllloo je récupérer les pages que je viens d'ajouter");
 			ByteBuffer headerpage = buffer.GetPage(headerPageId);
