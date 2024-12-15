@@ -430,7 +430,7 @@ public class Relation {
 			disk.WritePage(headerPageId,headerBuffer);
 			disk.WritePage(newPageId,dataPageBuffer);
 
-			System.out.println("helllloo je récupérer les pages que je viens d'ajouter");
+			System.out.println("je récupére les pages que je viens d'ajouter");
 			ByteBuffer headerpage = buffer.GetPage(headerPageId);
 			ByteBuffer datapage = buffer.GetPage(newPageId);
 			System.out.println("voici ce que g ecrit dans header page "+ " nb pages dans headerpage :" + headerpage.get(0));
@@ -459,11 +459,9 @@ public class Relation {
 
 			// Ajoutez ces logs pour déboguer
 			System.out.println("offset pour slot directory: " + (config.getPageSize() - 8));
-			System.out.println("COUCOU");
 			System.out.println(buff.position() == 0);
 			// Lire la position de début de l'espace libre
 			int posDebutLibre = buff.getInt(config.getPageSize() - 4);
-			System.out.println("hfhjhfjkhjkhkjh");
 			System.out.println("Position début espace libre : " + posDebutLibre);
 
 			// Vérifier si l'espace libre est suffisant pour le record
