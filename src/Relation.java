@@ -1,3 +1,5 @@
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,14 +14,28 @@ public class Relation {
 	private DBConfig config;
 
 	// Modifiez le constructeur pour accepter config et buffer en paramètre
-	public Relation(String nomRelation, int nbCol, ArrayList<ColInfo> tableCols, DBConfig config, PageId headerPageId, DiskManager disk, BufferManager buffer) {
+	public Relation(String nomRelation, int nbCol, ArrayList<ColInfo> tableCols, DBConfig config, DiskManager disk, BufferManager buffer) {
 		this.nomRelation = nomRelation;
 		this.nbCol = nbCol;
 		this.tableCols = tableCols;
-		this.headerPageId = headerPageId;
 		this.buffer = buffer;  // Initialiser BufferManager
 		this.disk = disk;
 		this.config = config;
+		//creer une headerPage pour la nouvelle relation
+		try{
+			this.headerPageId = disk.AllocPage();
+			ByteBuffer headerData = buffer.GetPage(headerPageId);
+			headerData.clear(); // Clear the buffer before writing
+			headerData.putInt(0); // Write the initial value (0 pages)
+			//Buffer headerBuffer = new Buffer(headerPageId, headerData);
+			buffer.FreePage(headerPageId, true);
+
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
 	}
 
 	public String getNomRelation() {
@@ -67,58 +83,76 @@ public class Relation {
 	 * @return int : la taille totale de l'enregistrement en octets, ou -1 en cas
 	 *         d'erreur.
 	 */
+
 	public int writeToBuffer(Record record, ByteBuffer buff, int pos) {
 		try {
+			// Définir la position du buffer à la valeur spécifiée
 			buff.position(pos);
-			int totalSize = 0;
-			ArrayList<String> recValues = record.getValeursRec();
+			int totalSize = 0; // Variable pour suivre la taille totale du record
+			ArrayList<String> recValues = record.getValeursRec(); // Obtenir les valeurs du Record
 
+			System.out.println("Écriture dans le buffer à la position : " + pos);
+			System.out.println("Valeurs du record : " + recValues);
+
+			// Parcourir toutes les colonnes du schéma de la table
 			for (int i = 0; i < getNbCol(); i++) {
-				String value = recValues.get(i);
+				String value = recValues.get(i); // Récupérer la valeur actuelle pour la colonne
 				ColInfo colInfo = tableCols.get(i);
+				System.out.println("Traitement de la colonne " + i + ": " + colInfo.toString() + " avec valeur : " + value);
 
+				// Switch basé sur le type de la colonne
 				switch (colInfo.getTypeCol()) {
 					case INT:
 						int intValue = Integer.parseInt(value);
-						buff.putInt(intValue);
-						totalSize += 4;
+						buff.putInt(intValue); // Écrire la valeur entière dans le buffer
+						totalSize += 4; // Un INT occupe 4 octets
+						System.out.println("Écrit INT : " + intValue);
 						break;
 
 					case FLOAT:
-						float floatValue = Float.parseFloat(value);
-						buff.putFloat(floatValue); // Write float to the buffer
-						totalSize += 4;
+						BigDecimal floatValue = new BigDecimal(value); // Convertir la valeur à BigDecimal
+						byte[] floatBytes = floatValue.toString().getBytes(); // Convertir BigDecimal en bytes (chaîne)
+						buff.putInt(floatBytes.length); // Écrire la longueur de la chaîne
+						buff.put(floatBytes); // Écrire les bytes de la chaîne
+						totalSize += 4 + floatBytes.length; // Ajouter la longueur totale (4 octets pour la taille + contenu)
+						System.out.println("Écrit FLOAT (en BigDecimal) : " + floatValue);
 						break;
 
 					case CHAR:
 						String charValue = value;
-						int charLength = colInfo.getLengthChar();
-						byte[] charBytes = new byte[charLength];
-						byte[] charValueBytes = charValue.getBytes();
+						int charLength = colInfo.getLengthChar(); // Obtenir la longueur fixe
+						byte[] charBytes = new byte[charLength]; // Créer un tableau de bytes de longueur fixe
+						byte[] charValueBytes = charValue.getBytes(); // Convertir la chaîne en tableau de bytes
+
+						// Copier les bytes de la chaîne dans le tableau de longueur fixe (troncature si nécessaire)
 						System.arraycopy(charValueBytes, 0, charBytes, 0, Math.min(charValueBytes.length, charLength));
-						buff.put(charBytes);
-						totalSize += charLength;
+						buff.put(charBytes); // Écrire les bytes de longueur fixe dans le buffer
+						totalSize += charLength; // Ajouter la longueur du champ CHAR à la taille totale
+						System.out.println("Écrit CHAR : " + charValue);
 						break;
 
 					case VARCHAR:
-						int varcharLength = value.length();
-						buff.putInt(varcharLength);
-						byte[] varcharBytes = value.getBytes();
-						buff.put(varcharBytes);
-						totalSize += 4 + varcharLength;
+						int varcharLength = value.length(); // Obtenir la longueur de la chaîne
+						buff.putInt(varcharLength); // Écrire d'abord la longueur de la chaîne (4 octets)
+						byte[] varcharBytes = value.getBytes(); // Convertir la chaîne en tableau de bytes
+						buff.put(varcharBytes); // Écrire les bytes de la chaîne dans le buffer
+						totalSize += 4 + varcharLength; // Ajouter 4 octets pour la longueur et la longueur de la chaîne à la taille totale
+						System.out.println("Écrit VARCHAR : " + value + " (longueur : " + varcharLength + ")");
 						break;
 
 					default:
-						throw new IllegalArgumentException("Invalid column type!");
+						throw new IllegalArgumentException("le type de la colonne invalide !!");
 				}
 			}
+
+			System.out.println("Taille totale écrite : " + totalSize + " octets");
 			return totalSize;
 		} catch (Exception e) {
-			System.err.println("Error in writeToBuffer: " + e.getMessage());
-			return -1;
+			System.err.println("Erreur dans writeToBuffer : " + e.getMessage());
+			e.printStackTrace(); // Afficher la trace de la pile pour plus de détails
+			return -1; // Retourner -1 en cas d'erreur
 		}
 	}
-
 
 	/**
 	 *  Cette méthode rend comme résultat la taille totale (=le nombre d’octets) lus depuis le buffer.
@@ -140,43 +174,48 @@ public class Relation {
 
 				switch (colInfo.getTypeCol()) {
 					case INT:
-						int valeur_int = buff.getInt();
+						int valeur_int = buff.getInt(); // lit 4 octs et les interpter comme un entier et avance la pos du
+						// tampon de 4 octs
 						record.getValeursRec().add(Integer.toString(valeur_int));
 						totalSize += 4;
 						break;
-
 					case FLOAT:
-						float valeur_float = buff.getFloat();
-						record.getValeursRec().add(String.format("%.2f", valeur_float)); // Format float consistently
-						totalSize += 4;
+						int floatBytesLength = buff.getInt(); // Lire la longueur des bytes
+						byte[] floatBytes = new byte[floatBytesLength];
+						buff.get(floatBytes); // Lire les bytes correspondant à la chaîne
+						String floatString = new String(floatBytes); // Convertir les bytes en chaîne
+						BigDecimal valeur_float = new BigDecimal(floatString); // Convertir la chaîne en BigDecimal
+						record.getValeursRec().add(valeur_float.toString()); // Ajouter au record sous forme de chaîne
+						totalSize += 4 + floatBytesLength; // Longueur totale (taille + contenu)
+						System.out.println("Lu FLOAT (en BigDecimal) : " + valeur_float);
 						break;
+
 
 					case CHAR:
 						int charLength = colInfo.getLengthChar();
-						byte[] charBytes = new byte[charLength];
-						buff.get(charBytes);
-						String valeur_char = new String(charBytes).trim(); // Remove padding spaces
-						record.getValeursRec().add(valeur_char);
+						byte[] charBytes = new byte[charLength]; // Créer un tableau de bytes pour stocker les données lues
+						// depuis le tampon
+						buff.get(charBytes); // Lire les bytes correspondant à la longueur de la chaîne CHAR
+						String valeur_char = new String(charBytes).trim(); // remove spaces or extra-padding
+						record.getValeursRec().add(valeur_char); // Ajouter la valeur lue (chaîne) dans la liste des valeurs
 						totalSize += charLength;
 						break;
-
 					case VARCHAR:
-						int varcharLength = buff.getInt();
-						byte[] varCharBytes = new byte[varcharLength];
+						int varCharLength = buff.getInt();
+						byte[] varCharBytes = new byte[varCharLength];
 						buff.get(varCharBytes);
 						String varCharValue = new String(varCharBytes);
 						record.getValeursRec().add(varCharValue);
-						totalSize += 4 + varcharLength;
+						totalSize += 4 + varCharLength;
 						break;
-
 					default:
-						throw new IllegalArgumentException("Invalid column type!");
+						throw new IllegalArgumentException("le type de votre colonne invalide !!");
 				}
 			}
 			return totalSize;
 		} catch (Exception e) {
 			System.err.println("Error in readFromBuffer: " + e.getMessage());
-			return -1;
+			return -1; // Or another error value as needed
 		}
 	}
 
@@ -197,7 +236,7 @@ public class Relation {
 
 			// Read the total number of data pages
 			int numPages = headerBuffer.getInt(0);
-			System.out.println("Number of data pages: " + numPages);
+			System.out.println("Number of data pages in header: " + numPages);
 
 			for (int i = 0; i < numPages; i++) {
 				int offset = 4 + i * 12; // Offset for each data page entry
@@ -234,48 +273,72 @@ public class Relation {
 	 */
 	public RecordId writeRecordToDataPage(Record record, PageId pageId) {
 		try {
-			// Load the data page buffer
+			// Charger la dataPage via BufferManager
 			ByteBuffer dataPageBuffer = buffer.GetPage(pageId);
+			Buffer buffDataPage = new Buffer(pageId,dataPageBuffer);
 
-			// Read metadata from the data page
-			int freeSpacePointer = dataPageBuffer.getInt(0); // Free space pointer
-			int slotCount = dataPageBuffer.getInt(4);        // Slot count
+			// Lire les métadonnées de la page
+			int posDebutLibre = dataPageBuffer.getInt(config.getPageSize() - 4); // Position début espace libre
+			int nbSlots = dataPageBuffer.getInt(config.getPageSize() - 8); // Nombre de slots
 
-			// Calculate the size of the record to be written
-			int recordSize = writeToBuffer(record, ByteBuffer.allocate(0), 0); // Use a temporary buffer to calculate size
-			if (recordSize <= 0) {
-				throw new IllegalStateException("Failed to calculate record size.");
-			}
+			// Écrire le record dans le buffer à partir de la position libre
+			int sizeRecord = writeToBuffer(record, dataPageBuffer, posDebutLibre);
 
-			// Validate free space
-			if (freeSpacePointer + recordSize > dataPageBuffer.capacity()) {
-				throw new IllegalStateException("Not enough free space in data page.");
-			}
+			// Mettre à jour les métadonnées : position début libre
+			posDebutLibre += sizeRecord;
+			dataPageBuffer.putInt(config.getPageSize() - 4, posDebutLibre); // Met à jour pos début libre
 
-			// Write record and update metadata
-			int recordStartOffset = freeSpacePointer;
-			writeToBuffer(record, dataPageBuffer, recordStartOffset); // Write the record to the data page
-			dataPageBuffer.putInt(0, freeSpacePointer + recordSize);  // Update free space pointer
-			dataPageBuffer.putInt(4, slotCount + 1);                 // Increment slot count
+			// Mettre à jour le nombre de slots et écrire dans le slot directory
+			int slotIdx = nbSlots;
+			nbSlots++;
+			dataPageBuffer.putInt(config.getPageSize() - 8, nbSlots); // Met à jour nb slots
 
-			// Update slot directory
-			int slotOffset = dataPageBuffer.capacity() - (slotCount + 1) * 8;
-			dataPageBuffer.putInt(slotOffset, recordStartOffset); // Write the start offset of the record
-			dataPageBuffer.putInt(slotOffset + 4, recordSize);    // Write the size of the record
+			// Calcul de la position pour le slot directory et mise à jour
+			int slotOffset = config.getPageSize() - 8 - 8 * nbSlots; // 8 octets par slot (position + taille)
+			dataPageBuffer.position(slotOffset);
+			dataPageBuffer.putInt(posDebutLibre - sizeRecord); // Position du début du record
+			dataPageBuffer.putInt(sizeRecord); // Taille du record
 
-			// Mark the page as dirty and release it
-			buffer.MarkDirty(pageId);
+			// Marquer la page comme modifiée
+			buffDataPage.setDirty(true);
+
+			// Mettre à jour headerPage
+			updateFreeSpaceInHeader(pageId, -sizeRecord);
+
+			// écriture sur disque
 			buffer.FreePage(pageId, true);
+			buffer.FreePage(headerPageId, true); //peut etre modifie
 
-			// Return the RecordId for the inserted record
-			return new RecordId(pageId, slotCount);
+			// Retourner un RecordId
+			return new RecordId(pageId, slotIdx);
+
 		} catch (Exception e) {
-			System.err.println("Error in writeRecordToDataPage: " + e.getMessage());
-			e.printStackTrace();
+			throw new RuntimeException("Erreur lors de l'écriture du record dans la page de données : " + e.getMessage(), e);
 		}
-		return null;
 	}
 
+	private void updateFreeSpaceInHeader(PageId pageId, int delta) {
+		try {
+			ByteBuffer buff = buffer.GetPage(headerPageId);
+			Buffer buffHeaderPage = new Buffer(headerPageId, buff);
+			int nbDataPages = buff.getInt(0);
+
+			for (int i = 0; i < nbDataPages; i++) {
+				buff.position(4 + i * 12);
+				int fileIdx = buff.getInt();
+				int pageIdx = buff.getInt();
+
+				if (fileIdx == pageId.getFileIdx() && pageIdx == pageId.getPageIdx()) {
+					int tailleLibre = buff.getInt();
+					buff.putInt(4 + i * 12 + 8, tailleLibre + delta);
+					buffHeaderPage.setDirty(true);
+					break;
+				}
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 
 
@@ -415,43 +478,37 @@ public class Relation {
 	 */
 	public void addDataPage() {
 		try {
-			// Step 1: Allocate a new data page
+			//Recupere la headerPage avecBufferManager
+			ByteBuffer ByteBuffHeaderPage=buffer.GetPage(headerPageId);
+			Buffer buffHeaderPage = new Buffer(headerPageId,ByteBuffHeaderPage);
+			// allocation d'une nouvelle page pour l'ajouter au headerpage
 			PageId newPageId = disk.AllocPage();
-			System.out.println("New data page allocated: FileIdx = " + newPageId.getFileIdx() + ", PageIdx = " + newPageId.getPageIdx());
+			System.out.println("Nouvelle page allouée : FileIdx = " + newPageId.getFileIdx() + ", PageIdx = " + newPageId.getPageIdx());
+			// On incrèmente le nombre de pages de headerpage
+			int nbPages = ByteBuffHeaderPage.getInt(0);
+			System.out.println("Nombre actuel de pages dans la Header Page avant ajout de la nouvelle page: " + nbPages);
+			nbPages++;
+			ByteBuffHeaderPage.putInt(0, nbPages);
+			// on ajoute dans la headerpage l'id de la page et le nombre d'octets vides
+			ByteBuffHeaderPage.position(4 + 12 * (nbPages - 1));
+			ByteBuffHeaderPage.putInt(newPageId.getFileIdx());
+			ByteBuffHeaderPage.putInt(newPageId.getPageIdx());
+			ByteBuffHeaderPage.putInt(config.getPageSize() - 8);
+			//on mets la headerpage dirty pour stocker les infos sur disque
+			buffHeaderPage.setDirty(true);
 
-			// Step 2: Initialize the new data page
-			ByteBuffer dataPageBuffer = ByteBuffer.allocate(config.getPageSize());
-			dataPageBuffer.putInt(0, 8); // Free space pointer (initially 8 bytes)
-			dataPageBuffer.putInt(4, 0); // Slot count (initially 0 slots)
-			disk.WritePage(newPageId, dataPageBuffer);
-
-			// Step 3: Load and update the header page
-			ByteBuffer headerBuffer = buffer.GetPage(headerPageId);
-			headerBuffer.position(0); // Ensure position is reset
-
-			int pageCount = headerBuffer.getInt(); // Read current page count
-			System.out.println("Current page count: " + pageCount);
-
-			// Validate there is space for the new entry
-			int offset = 4 + pageCount * 12;
-			if (offset + 12 > config.getPageSize()) {
-				throw new IllegalStateException("No space available in the header page to add a new data page.");
-			}
-
-			// Step 4: Write new page metadata
-			headerBuffer.putInt(offset, newPageId.getFileIdx());
-			headerBuffer.putInt(offset + 4, newPageId.getPageIdx());
-			headerBuffer.putInt(offset + 8, config.getPageSize() - 8); // Free space available initially
-
-			// Increment and update page count
-			headerBuffer.putInt(0, pageCount + 1);
-
-			// Step 5: Mark header page as dirty and release
-			buffer.MarkDirty(headerPageId);
+			//initialisation des données de la page qu'on vient d'ajouter
+			//à la headerpage
+			ByteBuffer byteBuffDataPage = buffer.GetPage(newPageId);
+			Buffer buffDataPage = new Buffer(newPageId,byteBuffDataPage);
+			byteBuffDataPage.position(0);
+			byteBuffDataPage.putInt(8);
+			byteBuffDataPage.putInt(0);
+			//pour stocker les infos de datapage
+			buffDataPage.setDirty(true);
 			buffer.FreePage(headerPageId, true);
-
-			System.out.println("Header page updated successfully. New page count: " + (pageCount + 1));
-
+			buffer.FreePage(newPageId, true);
+			System.out.println("ajout de page dans addDatapage avec succés");
 		} catch (Exception e) {
 			System.err.println("Error in addDataPage: " + e.getMessage());
 			e.printStackTrace();

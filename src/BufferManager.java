@@ -124,7 +124,7 @@ public class BufferManager {
 
 				// Pin count cannot go below 0
 				if (buffer.getPinCount() < 0) {
-					throw new Exception("Pin count cannot be negative for page: " + pageId);
+					throw new Exception("Pin count ne peut pas être négatif." + pageId);
 				}
 
 				// Update the dirty flag if needed

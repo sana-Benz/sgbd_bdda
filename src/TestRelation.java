@@ -6,34 +6,10 @@ public class TestRelation {
 	public static void main(String[] args) {
 		try {
 			// Step 1: Initialize components
-			DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
+			DBConfig config = new DBConfig("../DB", 8192, 24576, 100, "LRU");
 			DiskManager diskManager = new DiskManager(config);
 			BufferManager bufferManager = new BufferManager(config, diskManager);
 
-			// Step 2: Allocate and initialize the header page
-			PageId headerPageId = diskManager.AllocPage();
-			ByteBuffer headerPageBuffer = ByteBuffer.allocate(config.getPageSize());
-			headerPageBuffer.putInt(0, 0); // Initialize the page count to 0
-
-// Add default placeholders for metadata
-			int maxEntries = (config.getPageSize() - 4) / 12;
-			for (int i = 0; i < maxEntries; i++) {
-				headerPageBuffer.putInt(-1); // Default fileIdx placeholder
-				headerPageBuffer.putInt(-1); // Default pageIdx placeholder
-				headerPageBuffer.putInt(0);  // Default free space placeholder
-			}
-
-			diskManager.WritePage(headerPageId, headerPageBuffer);
-
-
-			// Validate Header Page Initialization
-			ByteBuffer validateHeaderBuffer = ByteBuffer.allocate(config.getPageSize());
-			diskManager.ReadPage(headerPageId, validateHeaderBuffer);
-			int initialPageCount = validateHeaderBuffer.getInt(0); // First 4 bytes: page count
-			if (initialPageCount != 0) {
-				throw new IllegalStateException("Header Page initialization failed: Page count is not 0.");
-			}
-			System.out.println("Header Page initialized successfully with 0 data pages.");
 
 			// Step 3: Define the relation schema
 			ArrayList<ColInfo> tableCols = new ArrayList<>();
@@ -43,7 +19,7 @@ public class TestRelation {
 			tableCols.add(new ColInfo("Salary", ColmType.FLOAT, 0));
 
 			// Step 4: Create the relation
-			Relation relation = new Relation("Employee", 4, tableCols, config, headerPageId, diskManager, bufferManager);
+			Relation relation = new Relation("Employee", 4, tableCols, config, diskManager, bufferManager);
 			System.out.println("Relation created successfully: " + relation);
 
 			// Step 5: Test addDataPage
@@ -59,7 +35,7 @@ public class TestRelation {
 
 			// Debugging the header page content
 			ByteBuffer debugBuffer = ByteBuffer.allocate(config.getPageSize());
-			diskManager.ReadPage(headerPageId, debugBuffer);
+			diskManager.ReadPage(relation.getHeaderPageId(), debugBuffer);
 			System.out.println("Debug Header Page Content: " + Arrays.toString(debugBuffer.array()));
 
 			// Step 6: Test writeToBuffer and readFromBuffer
