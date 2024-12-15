@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="com.obiscr.chatgpt.settings.EasyCodeState">
+    <option name="projectFiles" value="$PROJECT_DIR$/src/data/infos.json;D:/Projet_BDDA/sgbd_bdda/src/Buffer.java;D:/Projet_BDDA/sgbd_bdda/src/BufferManager.java;D:/Projet_BDDA/sgbd_bdda/src/BufferManagerTests.java;D:/Projet_BDDA/sgbd_bdda/src/ColInfo.java;D:/Projet_BDDA/sgbd_bdda/src/ColmType.java;D:/Projet_BDDA/sgbd_bdda/src/Database.java;D:/Projet_BDDA/sgbd_bdda/src/DBConfig.java;D:/Projet_BDDA/sgbd_bdda/src/DBManager.java;D:/Projet_BDDA/sgbd_bdda/src/DiskManager.java;D:/Projet_BDDA/sgbd_bdda/src/DiskManagerTests.java;D:/Projet_BDDA/sgbd_bdda/src/Main.java;D:/Projet_BDDA/sgbd_bdda/src/PageId.java;D:/Projet_BDDA/sgbd_bdda/src/Record.java;D:/Projet_BDDA/sgbd_bdda/src/RecordId.java;D:/Projet_BDDA/sgbd_bdda/src/Relation.java;D:/Projet_BDDA/sgbd_bdda/src/TestColInfo.java;D:/Projet_BDDA/sgbd_bdda/src/TestRecord.java;D:/Projet_BDDA/sgbd_bdda/src/TestRelation.java;D:/Projet_BDDA/sgbd_bdda/README.md" />
+  </component>
+</project>

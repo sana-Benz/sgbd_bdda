@@ -34,4 +34,30 @@ public class Record {
 	    return valeurRec(indexCol);
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Record [");
+
+		// Ajouter l'ID du record s'il existe
+		if (recordId != null) {
+			sb.append("Record ID: ").append(recordId).append(", ");
+		}
+
+		// Ajouter les valeurs des colonnes
+		sb.append("Valeurs: ");
+		for (int i = 0; i < valeursRec.size(); i++) {
+			sb.append(valeursRec.get(i));
+			if (i < valeursRec.size() - 1) {
+				sb.append(", ");
+			}
+		}
+
+		sb.append("]");
+		return sb.toString();
+	}
+
+
+
+
 }
