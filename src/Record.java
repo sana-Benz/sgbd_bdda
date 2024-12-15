@@ -25,6 +25,14 @@ public class Record {
 			throw new IndexOutOfBoundsException("Indice Invalide");
 		return valeursRec.get(indexCol);
 	}
+	
+	public String getValeurByNomCol(String nomCol) {
+	    int indexCol = relation.getColIndex(nomCol);
+	    if (indexCol == -1) {
+	        throw new IllegalArgumentException("Nom de colonne invalide : " + nomCol);
+	    }
+	    return valeurRec(indexCol);
+	}
 
 	@Override
 	public String toString() {
