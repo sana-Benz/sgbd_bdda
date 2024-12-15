@@ -7,4 +7,7 @@ public class PageId {
     }
     public int getFileIdx() {return FileIdx;}
     public int getPageIdx() {return PageIdx;}
+    public String toString(){
+        return "page : "+PageIdx+" fichier :"+FileIdx;
+    }
 }

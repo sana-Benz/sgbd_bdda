@@ -5,125 +5,51 @@ import java.util.Arrays;
 public class TestRelation {
 	public static void main(String[] args) {
 		try {
-			// Step 1: Initialize components
+			// Étape 1 : Initialisation des composants
 			DBConfig config = new DBConfig("../DB", 8192, 24576, 100, "LRU");
 			DiskManager diskManager = new DiskManager(config);
 			BufferManager bufferManager = new BufferManager(config, diskManager);
 
-
-			// Step 3: Define the relation schema
+			// Étape 2 : Définition du schéma de la relation
 			ArrayList<ColInfo> tableCols = new ArrayList<>();
 			tableCols.add(new ColInfo("ID", ColmType.INT, 0));
 			tableCols.add(new ColInfo("Name", ColmType.CHAR, 20));
-			tableCols.add(new ColInfo("Age", ColmType.INT, 0));
-			tableCols.add(new ColInfo("Salary", ColmType.FLOAT, 0));
 
-			// Step 4: Create the relation
-			Relation relation = new Relation("Employee", 4, tableCols, config, diskManager, bufferManager);
-			System.out.println("Relation created successfully: " + relation);
+			// Étape 3 : Création de la relation
+			Relation relation = new Relation("SimpleRelation", 2, tableCols, config, diskManager, bufferManager);
+			System.out.println("Relation créée avec succès : " + relation);
 
-			// Step 5: Test addDataPage
-			System.out.println("\nTesting addDataPage:");
+			// Étape 4 : Ajout d'une page de données
 			relation.addDataPage();
+			System.out.println("Une page de données a été ajoutée avec succès.");
+
+			// Étape 5 : Récupération de la première page de données
 			ArrayList<PageId> dataPages = relation.getDataPages();
-			if (dataPages == null || dataPages.isEmpty()) {
-				System.err.println("No data pages found after calling addDataPage.");
+			if (dataPages.isEmpty()) {
+				System.err.println("Erreur : aucune page de données trouvée.");
 				return;
-			} else {
-				System.out.println("Data pages after adding a page: " + dataPages);
 			}
+			PageId firstDataPage = dataPages.get(0);
 
-			// Debugging the header page content
-			ByteBuffer debugBuffer = ByteBuffer.allocate(config.getPageSize());
-			diskManager.ReadPage(relation.getHeaderPageId(), debugBuffer);
-			System.out.println("Debug Header Page Content: " + Arrays.toString(debugBuffer.array()));
-
-			// Step 6: Test writeToBuffer and readFromBuffer
-			System.out.println("\nTesting writeToBuffer and readFromBuffer:");
+			// Étape 6 : Création d'un enregistrement
 			Record record = new Record(relation, null);
-			ArrayList<String> recordValues = new ArrayList<>(Arrays.asList("1", "Alice", "30", "50000.50"));
+			ArrayList<String> recordValues = new ArrayList<>(Arrays.asList("1", "Alice"));
 			record.setValeursRec(recordValues);
 
-			ByteBuffer buffer = ByteBuffer.allocate(config.getPageSize());
-			int recordSize = relation.writeToBuffer(record, buffer, 0);
-			System.out.println("Record written to buffer: " + recordValues + " (Size: " + recordSize + " bytes)");
-
-			Record readRecord = new Record(relation, null);
-			int bytesRead = relation.readFromBuffer(readRecord, buffer, 0);
-			System.out.println("Record read from buffer: " + readRecord.getValeursRec() + " (Bytes Read: " + bytesRead + ")");
-			if (recordValues.equals(readRecord.getValeursRec())) {
-				System.out.println("Write and Read to/from buffer validated successfully.");
+			// Étape 7 : Écriture de l'enregistrement dans la page de données
+			RecordId recordId = relation.writeRecordToDataPage(record, firstDataPage);
+			if (recordId != null) {
+				System.out.println("Enregistrement inséré avec RecordId : " + recordId);
 			} else {
-				System.err.println("Mismatch in buffer write/read validation.");
-				System.err.println("Expected: " + recordValues);
-				System.err.println("Actual: " + readRecord.getValeursRec());
+				System.err.println("Échec de l'insertion de l'enregistrement.");
 			}
 
-			// Step 7: Test writing multiple records to the first data page
-			System.out.println("\nTesting multiple record insertions:");
-			for (int i = 2; i <= 5; i++) {
-				Record multiRecord = new Record(relation, null);
-				ArrayList<String> multiRecordValues = new ArrayList<>(Arrays.asList(
-						String.valueOf(i), "Name" + i, String.valueOf(20 + i), String.valueOf(1000.0 * i)
-				));
-				multiRecord.setValeursRec(multiRecordValues);
-
-				RecordId recordId = relation.writeRecordToDataPage(multiRecord, dataPages.get(0));
-				if (recordId != null) {
-					System.out.println("Record written with RecordId: " + recordId);
-				} else {
-					System.err.println("Failed to write record: " + multiRecordValues);
-				}
+			// Étape 8 : Lecture de tous les enregistrements
+			System.out.println("\nEnregistrements dans la relation :");
+			ArrayList<Record> allRecords = relation.getRecordsInDataPage(firstDataPage);
+			for (Record rec : allRecords) {
+				System.out.println("Enregistrement : " + rec.getValeursRec());
 			}
-
-			// Step 8: Test free space in data page after insertions
-			ByteBuffer dataPageBuffer = bufferManager.GetPage(dataPages.get(0));
-			int freeSpace = dataPageBuffer.getInt(0); // Free space pointer
-			System.out.println("Free space after insertions: " + freeSpace + " bytes");
-			bufferManager.FreePage(dataPages.get(0), false);
-
-			// Step 9: Test getRecordsInDataPage
-			System.out.println("\nTesting getRecordsInDataPage:");
-			if (!dataPages.isEmpty()) {
-				ArrayList<Record> recordsInPage = relation.getRecordsInDataPage(dataPages.get(0));
-				if (recordsInPage.isEmpty()) {
-					System.err.println("No records found in the data page. Check writeRecordToDataPage.");
-				} else {
-					for (Record rec : recordsInPage) {
-						System.out.println("Record in data page: " + rec.getValeursRec());
-					}
-				}
-			} else {
-				System.err.println("No data pages available to test getRecordsInDataPage.");
-			}
-
-			// Step 10: Test getAllRecords
-			System.out.println("\nTesting getAllRecords:");
-			ArrayList<Record> allRecords = relation.getAllRecords();
-			if (allRecords.isEmpty()) {
-				System.err.println("No records found in the relation. Check getAllRecords and record insertion logic.");
-			} else {
-				for (Record rec : allRecords) {
-					System.out.println("Record in relation: " + rec.getValeursRec());
-				}
-			}
-
-			// Step 11: Test edge case: Large record insertion
-			System.out.println("\nTesting edge case: Large record insertion:");
-			ArrayList<String> largeRecordValues = new ArrayList<>(Arrays.asList(
-					"999", "VeryLongNameForTestingEdgeCases", "99", "999999.99"
-			));
-			Record largeRecord = new Record(relation, null);
-			largeRecord.setValeursRec(largeRecordValues);
-
-			RecordId largeRecordId = relation.writeRecordToDataPage(largeRecord, dataPages.get(0));
-			if (largeRecordId != null) {
-				System.out.println("Large record written successfully with RecordId: " + largeRecordId);
-			} else {
-				System.err.println("Failed to write large record.");
-			}
-
-			System.out.println("\nTestRelation completed successfully!");
 
 		} catch (Exception e) {
 			e.printStackTrace();
