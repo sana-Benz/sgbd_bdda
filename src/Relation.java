@@ -28,6 +28,10 @@ public class Relation {
     public int getNbCol() {
         return nbCol;
     }
+    
+    public PageId getHeaderPageId() {
+		return headerPageId;
+	}
 
     public ArrayList<ColInfo> getTableCols() {
         return tableCols;
@@ -217,7 +221,7 @@ public class Relation {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace(); // Gérer les erreurs si nécessaires.
+            System.err.println("Erreur dans getFreeDataPageId : " + e.getMessage());
         }
         return null; // Aucune page disponible avec assez d'espace.
     }
@@ -437,5 +441,55 @@ public class Relation {
 		} catch (Exception e) {
 			System.err.println("Erreur lors de l'ajout d'une nouvelle page de données : " + e.getMessage());
 		}
+	}
+	
+	//addRecord : Cette méthode vérifie d'abord si une page de données libre est disponible pour insérer 
+	//le nouvel enregistrement.
+	//Si aucune page n'est disponible, elle appelle addDataPage pour en allouer une nouvelle.
+	public void addRecord(Record record) {
+	    // Obtenir la taille du record à insérer
+	    int recordSize = calculateRecordSize(record); // Implémentez cette méthode pour calculer la taille
+
+	    // Obtenir une page de données libre
+	    PageId freePageId = getFreeDataPageId(recordSize);
+	    if (freePageId == null) {
+	        // Si aucune page libre n'est disponible, ajoutez une nouvelle page
+	        addDataPage();
+	        freePageId = getFreeDataPageId(recordSize); // Réessayez d'obtenir une page libre
+	    }
+
+	    if (freePageId != null) {
+	        // Écrire le record dans la page de données
+	        RecordId recordId = writeRecordToDataPage(record, freePageId);
+	        System.out.println("Record ajouté avec succès avec RecordId : " + recordId);
+	    } else {
+	        System.out.println("Erreur : Pas assez d'espace pour ajouter le record.");
+	    }
+	}
+
+	// Méthode pour calculer la taille d'un record
+	private int calculateRecordSize(Record record) {
+	    int size = 0;
+	    for (int i = 0; i < record.getValeursRec().size(); i++) {
+	        String value = record.getValeursRec().get(i);
+	        ColInfo colInfo = tableCols.get(i);
+	        switch (colInfo.getTypeCol()) {
+	            case INT:
+	                size += 4; // Un INT occupe 4 octets
+	                break;
+	            case FLOAT:
+	                size += 4; // Un FLOAT occupe 4 octets
+	                break;
+	            case CHAR:
+	                size += colInfo.getLengthChar(); // Longueur fixe
+	                break;
+	            case VARCHAR:
+	                size += 4 + value.length(); // 4 octets pour la longueur + longueur de la chaîne
+	                break;
+	            default:
+	                throw new IllegalArgumentException("Type de colonne invalide : " + colInfo.getTypeCol());
+	        }
+	    }
+	    return size;
 	}
 }

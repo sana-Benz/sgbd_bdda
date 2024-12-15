@@ -192,7 +192,88 @@ public class SGBD {
     public void ProcessListTablesCommand() {
         dbManager.ListTables();
     }
+    
+    //Methode pour INSERT 
+    public void processInsertCommand(String command) {
+        // Exemple de commande : INSERT INTO nomRelation VALUES (val1,val2,...)
+        String[] parts = command.split(" ");
+        if (parts.length < 5 || !parts[0].equals("INSERT") || !parts[1].equals("INTO") || !parts[3].equals("VALUES")) {
+            System.out.println("Commande invalide.");
+            return;
+        }
 
+        String relationName = parts[2];
+        String valuesPart = command.substring(command.indexOf("(") + 1, command.indexOf(")"));
+        String[] values = valuesPart.split(",");
+
+        // Vérifiez si la relation existe
+        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
+        if (relation == null) {
+            System.out.println("La relation " + relationName + " n'existe pas.");
+            return;
+        }
+
+        // Vérifiez le nombre de valeurs et les types
+        if (values.length != relation.getNbCol()) {
+            System.out.println("Le nombre de valeurs ne correspond pas au nombre de colonnes.");
+            return;
+        }
+
+        // Ajoutez le record à la relation
+        Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), 0));
+        ArrayList<String> valeursRec = new ArrayList<>();
+        for (String value : values) {
+            valeursRec.add(value.trim().replace("\"", "")); // Enlever les guillemets
+        }
+        record.setValeursRec(valeursRec);
+        relation.addRecord(record); // Méthode à implémenter dans Relation
+        System.out.println("Record inséré avec succès.");
+    }
+    public void processSelectCommand(String command) {
+        // Exemple de commande : SELECT aliasRel.colp1, aliasRel.colp2 FROM nomRelation aliasRel [WHERE C1 AND C2 ...]
+        String[] parts = command.split(" ");
+        if (parts.length < 4 || !parts[0].equals("SELECT") || !parts[2].equals("FROM")) {
+            System.out.println("Commande invalide.");
+            return;
+        }
+
+        String relationName = parts[3];
+        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
+        if (relation == null) {
+            System.out.println("La relation " + relationName + " n'existe pas.");
+            return;
+        }
+
+        // Traitement des colonnes à afficher
+        String[] columns = parts[1].split(",");
+        ArrayList<String> selectedColumns = new ArrayList<>();
+        for (String column : columns) {
+            selectedColumns.add(column.trim());
+        }
+
+        // Vérification de la clause WHERE
+        String whereClause = command.contains("WHERE") ? command.substring(command.indexOf("WHERE") + 6) : "";
+        Condition condition = null;
+        if (!whereClause.isEmpty()) {
+            condition = new Condition(whereClause.trim()); // Implémentez la classe Condition pour gérer les conditions
+        }
+
+        // Itération sur les tuples
+        int totalRecords = 0;
+        for (Record record : relation.getAllRecords()) {
+            if (condition == null || condition.evaluate(record)) {
+                totalRecords++;
+                StringBuilder output = new StringBuilder();
+                for (String col : selectedColumns) {
+                    output.append(record.getValeurByNomCol(col)).append(" ; "); // Assurez-vous que getValue() fonctionne
+                }
+                output.setLength(output.length() - 3); // Enlever le dernier " ; "
+                output.append(".");
+                System.out.println(output.toString());
+            }
+        }
+        System.out.println("Total records = " + totalRecords);
+    }
     
  // Méthode Run
     public void Run() {
@@ -234,6 +315,10 @@ public class SGBD {
                 ProcessDropTablesCommand();
             } else if (commande.equalsIgnoreCase("list tables")) {
                 ProcessListTablesCommand();
+            } else if (commande.startsWith("INSERT INTO")) { // exemple: INSERT INTO tab1 VALUES (1, "abc")
+                processInsertCommand(commande);
+            } else if (commande.startsWith("SELECT")) { // Ajout de la commande de sélection
+                processSelectCommand(commande);
             } else {
                 System.out.println("Commande non reconnue.");
             }
