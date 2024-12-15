@@ -394,27 +394,29 @@ public class Relation {
 	 */
 	public void addDataPage() {
 		try {
-			// Load the header page
+			System.out.println("load headerPage pour ajouter une page");
 			ByteBuffer headerBuffer = buffer.GetPage(headerPageId);
 			int numPages = headerBuffer.getInt(0); // Read the current number of data pages
 			System.out.println("Nombre actuel de pages de données dans headerpage avant ajout : " + numPages);
-			// Allocate a new data page
+			System.out.println("allouer une nouvelle datapage");
 			PageId newPageId = disk.AllocPage();
 			ByteBuffer dataPageBuffer = buffer.GetPage(newPageId);
 			dataPageBuffer.clear();
-			System.out.println("Buffer capacity: " + dataPageBuffer.capacity());
-			System.out.println("Expected page size: " + config.getPageSize());
 			dataPageBuffer.putInt(dataPageBuffer.capacity()-4,0); // Free space starts at 0
 			dataPageBuffer.putInt(dataPageBuffer.capacity()-8,0); // Number of records (M) initialized to 0
-			System.out.println("Nouvelle page de données initialisée : " + newPageId);
+			System.out.println("Nouvelle page de données initialisée : " + newPageId + "espace vide commence à "+ dataPageBuffer.getInt(dataPageBuffer.capacity()-4)
+					+ " et nb slots est " + dataPageBuffer.getInt(dataPageBuffer.capacity()-8));
+
+			System.out.println("Mise à jour de la headerPage après ajout de datapage ");
 			headerBuffer.position(4 + numPages * 12); // Move to the correct position for the new page
 			headerBuffer.putInt(newPageId.getFileIdx());
 			headerBuffer.putInt(newPageId.getPageIdx());
 			headerBuffer.putInt(dataPageBuffer.capacity() - 8); // Initial free space
-
+			int numPagesIncremente = numPages + 1;
 			// Update the number of pages in the header
-			headerBuffer.putInt(0, numPages + 1); // Increment the number of pages
-			System.out.println("Nombre de pages de données incrémenté à : " + (numPages + 1));
+			headerBuffer.putInt(0, numPagesIncremente); // Increment the number of pages
+			System.out.println("Nombre de pages de données incrémenté à : " + numPagesIncremente);
+			System.out.println("nouvelle position pour la prochaine page dans headerPage "+ (4 + numPagesIncremente * 12) );
 
 			// Mark both pages as dirty
 			buffer.MarkDirty(headerPageId);
@@ -425,8 +427,15 @@ public class Relation {
 			buffer.FreePage(newPageId, true);
 			System.out.println("Pages libérées : HeaderPage (" + headerPageId + ") et DataPage (" + newPageId + ")");
 
-
 			buffer.flushBuffers();
+
+			System.out.println("helllloo je récupérer les pages que je viens d'ajouter");
+			ByteBuffer headerpage = buffer.GetPage(headerPageId);
+			ByteBuffer datapage = buffer.GetPage(newPageId);
+			System.out.println("voici ce que g ecrit dans header page "+ " nb pages dans headerpage :" + headerpage.get(0));
+			System.out.println("voici ce que g ecrit dans data page qui est vide apres "+ " position début espace dispo" +datapage.get(config.getPageSize()-4));
+
+
 		} catch (Exception e) {
 			System.err.println("Error in addDataPage: " + e.getMessage());
 		}
@@ -448,13 +457,13 @@ public class Relation {
 			Buffer buffDataPage = new Buffer(pageId, buff);
 
 			// Ajoutez ces logs pour déboguer
-			System.out.println("Buffer content before accessing offsets: " + Arrays.toString(buff.array()));
-			System.out.println("Expected position for free space: " + (config.getPageSize() - 4));
-			System.out.println("Expected position for slot directory: " + (config.getPageSize() - 8));
-
+			System.out.println("offset pour slot directory: " + (config.getPageSize() - 8));
+			System.out.println("COUCOU");
+			System.out.println(buff.position() == 0);
 			// Lire la position de début de l'espace libre
-			int posDebutLibre = buff.getInt(buff.capacity() - 4);
-			System.out.println("Position avant écriture : " + posDebutLibre);
+			int posDebutLibre = buff.getInt(config.getPageSize() - 4);
+			System.out.println("hfhjhfjkhjkhkjh");
+			System.out.println("Position début espace libre : " + posDebutLibre);
 
 			// Vérifier si l'espace libre est suffisant pour le record
 			buff.position(posDebutLibre);
