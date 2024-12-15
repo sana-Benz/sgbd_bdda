@@ -1,4 +1,14 @@
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.json.simple.parser.ParseException;
 import java.util.*;
 
@@ -16,7 +26,7 @@ public class SGBD {
             this.diskManager = new DiskManager(config);
             this.bufferManager = new BufferManager(config, diskManager);
             this.dbManager = new DBManager(config, diskManager, bufferManager); // Passer les gestionnaires ici
-            
+
             // Charger l'état des gestionnaires
             diskManager.LoadState();
             dbManager.LoadState();
@@ -46,7 +56,7 @@ public class SGBD {
         dbManager.SaveState();
         bufferManager.flushBuffers();
     }
-    
+
     public void ProcessCreateDatabaseCommand(String commande) {
         String[] parts = commande.split(" "); // Diviser la commande en parties
         if (parts.length < 3) {
@@ -56,18 +66,18 @@ public class SGBD {
         String nomBdd = parts[2]; // Récupérer le nom de la base de données
         dbManager.CreateDatabase(nomBdd); // Passer uniquement le nom à la méthode
     }
-    
+
     // Méthode pour définir la base de données courante
     public void ProcessSetDatabaseCommand(String nomBdd) {
         // Vérifiez si la base existe
-    	if (dbManager.databases.contains(nomBdd)) {
+        if (dbManager.databases.contains(nomBdd)) {
             dbManager.setCurrentDatabase(nomBdd); // Assurez-vous d'avoir une méthode pour définir la base courante
             System.out.println("Base de données courante définie sur : " + nomBdd);
         } else {
             System.out.println("La base de données " + nomBdd + " n'existe pas.");
         }
     }
-    
+
     // Méthode pour supprimer une base de données
     public void ProcessDropDatabaseCommand(String nomBdd) {
         if (dbManager.databases.contains(nomBdd)) {
@@ -77,7 +87,7 @@ public class SGBD {
             System.out.println("La base de données " + nomBdd + " n'existe pas.");
         }
     }
-    
+
     // Méthode pour supprimer toutes les bases de données
     public void ProcessDropDatabasesCommand() {
         System.out.println("Nombre de bases de données avant suppression : " + dbManager.databases.size());
@@ -90,13 +100,13 @@ public class SGBD {
         dbManager.RemoveAllDatabases();
         System.out.println("Toutes les bases de données ont été supprimées avec succès !");
     }
-    
+
     // Méthode pour lister les bases de données
     public void ProcessListDatabasesCommand() {
         dbManager.ListDatabases();
     }
-    
- // Méthode pour créer une table
+
+    // Méthode pour créer une table
     public void ProcessCreateTableCommand(String commande) {
         // Vérifiez que la commande commence par "create table"
         if (!commande.startsWith("create table")) {
@@ -170,8 +180,8 @@ public class SGBD {
         dbManager.CreateTable(nomTable, colonnes);
         System.out.println("Table " + nomTable + " créée avec succès !");
     }
-    
- // Méthode pour supprimer une table
+
+    // Méthode pour supprimer une table
     public void ProcessDropTableCommand(String nomTable) {
         if (dbManager.tableExists(nomTable)) {
             dbManager.RemoveTable(nomTable);
@@ -181,8 +191,8 @@ public class SGBD {
             System.out.println("La table " + nomTable + " n'existe pas.");
         }
     }
-    
- // Méthode pour supprimer toutes les tables
+
+    // Méthode pour supprimer toutes les tables
     public void ProcessDropTablesCommand() {
         dbManager.RemoveAllTables();
         System.out.println("Toutes les tables ont été supprimées avec succès !");
@@ -192,8 +202,8 @@ public class SGBD {
     public void ProcessListTablesCommand() {
         dbManager.ListTables();
     }
-    
-    //Methode pour INSERT 
+
+    //Methode pour INSERT
     public void processInsertCommand(String command) {
         // Exemple de commande : INSERT INTO nomRelation VALUES (val1,val2,...)
         String[] parts = command.split(" ");
@@ -229,6 +239,51 @@ public class SGBD {
         relation.addRecord(record); // Méthode à implémenter dans Relation
         System.out.println("Record inséré avec succès.");
     }
+
+    public void processBulkInsertCommand(String command) {
+        // Exemple de commande : BULKINSERT INTO nomRelation nomFichier.csv
+        String[] parts = command.split(" ");
+        if (parts.length != 4 || !parts[0].equals("BULKINSERT") || !parts[1].equals("INTO")) {
+            System.out.println("Commande invalide.");
+            return;
+        }
+
+        String relationName = parts[2];
+        String fileName = parts[3];
+
+        // Vérifiez si la relation existe
+        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
+        if (relation == null) {
+            System.out.println("La relation " + relationName + " n'existe pas.");
+            return;
+        }
+
+        // Lire le fichier CSV
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(","); // Supposons que les valeurs sont séparées par des virgules
+                if (values.length != relation.getNbCol()) {
+                    System.out.println("Le nombre de valeurs ne correspond pas au nombre de colonnes pour la ligne : " + line);
+                    continue; // Passer à la ligne suivante
+                }
+
+                // Créer un nouvel enregistrement
+                Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), 0));
+                ArrayList<String> valeursRec = new ArrayList<>();
+                for (String value : values) {
+                    valeursRec.add(value.trim().replace("\"", ""));
+                }
+                record.setValeursRec(valeursRec);
+                relation.addRecord(record); // Méthode à implémenter dans Relation
+            }
+            System.out.println("Insertion en bloc terminée avec succès !");
+        } catch (IOException e) {
+            System.out.println("Erreur lors de la lecture du fichier : " + e.getMessage());
+        }
+    }
+
+
     public void processSelectCommand(String command) {
         // Exemple de commande : SELECT aliasRel.colp1, aliasRel.colp2 FROM nomRelation aliasRel [WHERE C1 AND C2 ...]
         String[] parts = command.split(" ");
@@ -274,8 +329,8 @@ public class SGBD {
         }
         System.out.println("Total records = " + totalRecords);
     }
-    
- // Méthode Run
+
+    // Méthode Run
     public void Run() {
         Scanner scanner = new Scanner(System.in);
         String commande;
@@ -346,5 +401,5 @@ public class SGBD {
             System.err.println("Erreur lors de la configuration du SGBD : " + e.getMessage());
         }
     }
-    
+
 }

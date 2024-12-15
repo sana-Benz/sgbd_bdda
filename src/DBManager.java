@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
@@ -12,10 +13,10 @@ public class DBManager {
     public List<String> databases;         // List of database names
     private DBConfig config;                // Configuration for database path
     private Database currentDatabase;       // Currently active database
-	private DiskManager diskManager;        // Instance of DiskManager
+    private DiskManager diskManager;        // Instance of DiskManager
     private BufferManager bufferManager;    // Instance of BufferManager
 
- // Constructor taking DBConfig and DiskManager instances
+    // Constructor taking DBConfig and DiskManager instances
     public DBManager(DBConfig config, DiskManager diskManager, BufferManager bufferManager) {
         this.config = config;
         this.diskManager = diskManager; // Initialize diskManager
@@ -35,12 +36,12 @@ public class DBManager {
         databases.add(nomBdd);
         System.out.println("Base de données " + nomBdd + " créée avec succès !");
     }
-    
-    public Database getCurrentDatabase() {
-		return currentDatabase; // Retourne la base de données courante
-	}
 
-	// Method to set the current database
+    public Database getCurrentDatabase() {
+        return currentDatabase; // Retourne la base de données courante
+    }
+
+    // Method to set the current database
     public void setCurrentDatabase(String nomBdd) {
         if (databases.contains(nomBdd)) {
             // Créez une nouvelle instance de Database pour la base de données courante
@@ -51,8 +52,8 @@ public class DBManager {
         }
     }
 
-	 // Method to remove a database
-	 public void RemoveDatabase(String nomBdd) {
+    // Method to remove a database
+    public void RemoveDatabase(String nomBdd) {
         if (databases.remove(nomBdd)) {
             System.out.println("Base de données " + nomBdd + " supprimée avec succès !");
             // Si la base de données supprimée était la courante, réinitialisez currentDatabase
@@ -63,18 +64,18 @@ public class DBManager {
             System.out.println("La base de données " + nomBdd + " n'existe pas.");
         }
     }
-	// Method to remove all databases
-	public void RemoveAllDatabases() {
-		if (databases.isEmpty()) {
-			System.out.println("Aucune base de données à supprimer.");
-			return;
-		}
+    // Method to remove all databases
+    public void RemoveAllDatabases() {
+        if (databases.isEmpty()) {
+            System.out.println("Aucune base de données à supprimer.");
+            return;
+        }
 
-		// Supprimer toutes les bases de données
-		databases.clear();
-		currentDatabase = null; // Réinitialiser la base de données courante
-		System.out.println("Toutes les bases de données ont été supprimées avec succès !");
-	}
+        // Supprimer toutes les bases de données
+        databases.clear();
+        currentDatabase = null; // Réinitialiser la base de données courante
+        System.out.println("Toutes les bases de données ont été supprimées avec succès !");
+    }
 
     // Method to list all databases
     public void ListDatabases() {
@@ -154,30 +155,30 @@ public class DBManager {
         System.out.println("Table " + nomTable + " supprimée avec succès de la base " + currentDatabase.getNom() + ".");
     }*/
 
-	// Method to create a table in the current active database
-public void CreateTable(String nomTable, ArrayList<ColInfo> colonnes) {
-    if (currentDatabase == null) {
-        throw new IllegalStateException("Aucune base de données active.");
-    }
+    // Method to create a table in the current active database
+    public void CreateTable(String nomTable, ArrayList<ColInfo> colonnes) {
+        if (currentDatabase == null) {
+            throw new IllegalStateException("Aucune base de données active.");
+        }
 
-    try {
-        // Créer une nouvelle Header Page pour la table
-        PageId headerPageId = diskManager.AllocPage(); // Allouer une nouvelle page pour l'en-tête
-        ByteBuffer headerPage = ByteBuffer.allocate(config.getPageSize());
-        headerPage.putInt(1); // Nombre de pages de données initial
-        headerPage.putInt(headerPageId.getFileIdx()); // FileIdx de la première DataPage
-        headerPage.putInt(0); // PageIdx de la première DataPage
-        headerPage.putInt(config.getPageSize() - 8); // Espace libre initial
-        diskManager.WritePage(headerPageId, headerPage); // Écrire la Header Page sur le disque
+        try {
+            // Créer une nouvelle Header Page pour la table
+            PageId headerPageId = diskManager.AllocPage(); // Allouer une nouvelle page pour l'en-tête
+            ByteBuffer headerPage = ByteBuffer.allocate(config.getPageSize());
+            headerPage.putInt(1); // Nombre de pages de données initial
+            headerPage.putInt(headerPageId.getFileIdx()); // FileIdx de la première DataPage
+            headerPage.putInt(0); // PageIdx de la première DataPage
+            headerPage.putInt(config.getPageSize() - 8); // Espace libre initial
+            diskManager.WritePage(headerPageId, headerPage); // Écrire la Header Page sur le disque
 
-        // Créer la relation (table)
-        Relation relation = new Relation(nomTable, colonnes.size(), colonnes, config, headerPageId, diskManager, bufferManager);
-        currentDatabase.addTable(relation); // Ajouter la table à la base de données courante
-        System.out.println("Table " + nomTable + " ajoutée à la base de données " + currentDatabase.getNom() + ".");
-    } catch (IOException e) {
-        System.out.println("Erreur lors de l'allocation de la page : " + e.getMessage());
+            // Créer la relation (table)
+            Relation relation = new Relation(nomTable, colonnes.size(), colonnes, config,  diskManager, bufferManager);
+            currentDatabase.addTable(relation); // Ajouter la table à la base de données courante
+            System.out.println("Table " + nomTable + " ajoutée à la base de données " + currentDatabase.getNom() + ".");
+        } catch (IOException e) {
+            System.out.println("Erreur lors de l'allocation de la page : " + e.getMessage());
+        }
     }
-}
 
     // Method to check if la table existe dans la base de données courante
     public boolean tableExists(String nomTable) {
@@ -222,4 +223,3 @@ public void CreateTable(String nomTable, ArrayList<ColInfo> colonnes) {
         currentDatabase.listTables(); // Assurez-vous que cette méthode est définie dans la classe Database
     }
 }
-
