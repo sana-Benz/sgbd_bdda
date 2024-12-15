@@ -28,6 +28,6 @@ public class ColInfo {
 
     
     public String toString(){
-        return "name : "+ColName+" type : "+typeCol+ " lengthString : "+lengthString+" ";
+        return "name : "+ColName+" type : "+typeCol+ " lengthString : "+lengthChar+" ";
     }
 }
