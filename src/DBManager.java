@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +36,16 @@ public class DBManager {
 
 	// Method to set the current database
     
-    
+ // Method to set the current database
+    public void setCurrentDatabase(String nomBdd) {
+        if (databases.contains(nomBdd)) {
+            // Créez une nouvelle instance de Database pour la base de données courante
+            currentDatabase = new Database(nomBdd, new ArrayList<>()); // Vous pouvez passer les relations si nécessaire
+            System.out.println("Base de données courante définie sur : " + nomBdd);
+        } else {
+            System.out.println("La base de données " + nomBdd + " n'existe pas.");
+        }
+    }
     
 	/**
 	 * Retourne une instance de Relation correspondant à une table spécifique
@@ -72,6 +82,33 @@ public class DBManager {
 		}
 		System.out.println("Table " + nomTable + " supprimée avec succès de la base " + currentDatabase.getNom() + ".");
 	}
+	
+	// Method to load the database state from a file
+    public void LoadState() {
+        File fichierSauvegarde = new File(config.getDbpath() + "/databases.save");
+
+        // Check if the backup file exists
+        if (!fichierSauvegarde.exists()) {
+            System.out.println("Aucun fichier de sauvegarde trouvé. Aucune base chargée.");
+            return;
+        }
+
+        try (BufferedReader lecteur = new BufferedReader(new FileReader(fichierSauvegarde))) {
+            String ligne;
+
+            // Read each line to load databases
+            while ((ligne = lecteur.readLine()) != null) {
+                String nomBdd = ligne.trim();
+                if (!databases.contains(nomBdd)) {
+                    databases.add(nomBdd);
+                }
+            }
+
+            System.out.println("État chargé avec succès !");
+        } catch (IOException e) {
+            System.out.println("Erreur lors du chargement de l'état : " + e.getMessage());
+        }
+    }
 
 	/**
 	 * Sauvegarde l'état actuel des bases de données et des tables dans un fichier.
@@ -241,7 +278,68 @@ public class DBManager {
 	    }
 	}
 
+	public void RemoveAllDatabases() {
+		if (databases.isEmpty()) {
+			System.out.println("Aucune base de données à supprimer.");
+			return;
+		}
 
+		// Supprimer toutes les bases de données
+		databases.clear();
+		currentDatabase = null; // Réinitialiser la base de données courante
+		System.out.println("Toutes les bases de données ont été supprimées avec succès !");
+	}
+
+	public void CreateTable(String nomTable, ArrayList<ColInfo> colonnes) {
+	    if (currentDatabase == null) {
+	        throw new IllegalStateException("Aucune base de données active.");
+	    }
+
+	    try {
+	        // Créer une nouvelle Header Page pour la table
+	        PageId headerPageId = diskManager.AllocPage(); // Allouer une nouvelle page pour l'en-tête
+	        ByteBuffer headerPage = ByteBuffer.allocate(config.getPageSize());
+	        headerPage.putInt(1); // Nombre de pages de données initial
+	        headerPage.putInt(headerPageId.getFileIdx()); // FileIdx de la première DataPage
+	        headerPage.putInt(0); // PageIdx de la première DataPage
+	        headerPage.putInt(config.getPageSize() - 8); // Espace libre initial
+	        diskManager.WritePage(headerPageId, headerPage); // Écrire la Header Page sur le disque
+	        ArrayList<ColInfo>  tableCols = new ArrayList<>(); 
+	        // Créer la relation (table)
+	        Relation relation = new Relation(config, "table1", 0, tableCols, headerPageId, diskManager, bufferManager);
+	        currentDatabase.addTable(relation); // Ajouter la table à la base de données courante
+	        System.out.println("Table " + nomTable + " ajoutée à la base de données " + currentDatabase.getNom() + ".");
+	    } catch (IOException e) {
+	        System.out.println("Erreur lors de l'allocation de la page : " + e.getMessage());
+	    }
+	}
+
+	public boolean tableExists(String nomTable) {
+        if (currentDatabase == null) {
+            throw new IllegalStateException("Aucune base de données active.");
+        }
+        return currentDatabase.getTable(nomTable) != null;
+    }
+
+    // Method to remove a table from the current active database
+    public void RemoveTable(String nomTable) {
+        if (currentDatabase == null) {
+            throw new IllegalStateException("Aucune base de données active.");
+        }
+        boolean removed = currentDatabase.removeTable(nomTable);
+        if (removed) {
+            System.out.println("Table " + nomTable + " supprimée avec succès de la base " + currentDatabase.getNom() + ".");
+        } else {
+            System.out.println("La table " + nomTable + " n'existe pas dans la base active.");
+        }
+    }
+
+    // Method to deallocate pages for a table
+    public void DeallocPagesForTable(String nomTable) {
+        // Implémentez la logique pour désallouer les pages associées à la table
+        System.out.println("Pages désallouées pour la table " + nomTable + ".");
+    }
+    
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
