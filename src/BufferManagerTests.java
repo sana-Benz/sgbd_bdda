@@ -1,4 +1,5 @@
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public class BufferManagerTests {
     public static void main(String[] args) {
@@ -13,17 +14,20 @@ public class BufferManagerTests {
             PageId pageId = diskManager.AllocPage(); // marche
             ByteBuffer writeBuffer = ByteBuffer.allocate(config.getPageSize());
             String data = "Données de test pour la page";
-            writeBuffer.put(data.getBytes());
-            diskManager.WritePage(pageId, writeBuffer); //marche
+            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
+            writeBuffer.put(dataBytes); // Écrire les données dans le buffer
+            writeBuffer.flip(); // Réinitialiser la position avant d'écrire sur le disque
+            diskManager.WritePage(pageId, writeBuffer); // marche
             System.out.println("Page allouée et données écrites: " + pageId);
 
             // Étape 2: Lecture et vérification des données
             System.out.println("\n[Étape 2] Lecture et vérification des données");
             ByteBuffer readBuffer = bufferManager.GetPage(pageId);
             bufferManager.bufferPoolState();
-            byte[] readData = new byte[data.length()];
-            readBuffer.get(readData);
-            System.out.println("Données lues depuis la page: " + new String(readData));
+            byte[] readData = new byte[dataBytes.length]; // Assurez-vous que la taille est correcte
+            readBuffer.get(readData); // Lire les données du buffer
+            String readString = new String(readData, StandardCharsets.UTF_8); // Convertir en chaîne
+            System.out.println("Données lues depuis la page: " + readString);
 
             // Étape 3: Modification, libération et vérification
             System.out.println("\n[Étape 3] Modification, libération et vérification");
@@ -44,15 +48,14 @@ public class BufferManagerTests {
             System.out.println("Buffers flushés avec succès.");
             bufferManager.bufferPoolState();
 
-            //probably le flush n'ecrit pas correctement les pages modifiées
-
             // Vérification finale: Lecture après flush
             System.out.println("\n[Vérification finale] Lecture après flush");
             ByteBuffer finalBuffer = ByteBuffer.allocate(config.getPageSize());
             diskManager.ReadPage(pageId, finalBuffer);
-            byte[] finalData = new byte[data.length()];
+            byte[] finalData = new byte[dataBytes.length];
             finalBuffer.get(finalData);
-            System.out.println("Données finales après flush: " + new String(finalData));
+            String finalString = new String(finalData, StandardCharsets.UTF_8); // Convertir en chaîne
+            System.out.println("Données finales après flush: " + finalString);
 
         } catch (Exception e) {
             e.printStackTrace();

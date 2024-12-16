@@ -107,21 +107,19 @@ public class DiskManager {
     public void ReadPage(PageId pageId, ByteBuffer buff) {
         try (RandomAccessFile file = new RandomAccessFile(construireCheminFichier(pageId.getFileIdx()), "r")) {
             int offset = pageId.getPageIdx() * config.getPageSize();
-            System.out.println("Lecture de la page : "+pageId);
-            //System.out.println("Offset: " + offset);
+            System.out.println("Lecture de la page : " + pageId);
 
-            file.seek(offset); // Seek to the correct position
+            file.seek(offset); // Se déplacer à la bonne position
             byte[] pageData = new byte[config.getPageSize()];
             int bytesRead = file.read(pageData);
 
             if (bytesRead < config.getPageSize()) {
-                throw new IOException("Incomplete read for PageId: " + pageId);
+                throw new IOException("Lecture incomplète pour PageId: " + pageId);
             }
 
-
-            buff.clear(); // Prepare buffer for writing
-            buff.put(pageData); // Copy the read bytes into the buffer
-            buff.flip(); // Prepare buffer for reading
+            buff.clear(); // Préparer le buffer pour l'écriture
+            buff.put(pageData); // Copier les octets lus dans le buffer
+            buff.flip(); // Préparer le buffer pour la lecture
             System.out.println("Buffer Après lecture: " + Arrays.toString(Arrays.copyOf(buff.array(), 16)));
         } catch (IOException e) {
             System.err.println("Error while reading page: " + e.getMessage());
@@ -143,12 +141,14 @@ public class DiskManager {
             int offset = pageId.getPageIdx() * config.getPageSize();
             file.seek(offset);
 
+            // Assurez-vous que le buffer est prêt à être écrit
+            buff.position(0); // Réinitialiser la position du buffer avant d'écrire
             byte[] pageData = new byte[config.getPageSize()];
-            buff.position(0);
-            buff.get(pageData, 0, config.getPageSize());
-            file.write(pageData);
+            int bytesToWrite = Math.min(buff.remaining(), config.getPageSize()); // Limiter à la taille de la page
+            buff.get(pageData, 0, bytesToWrite); // Lire les données du buffer
+            file.write(pageData); // Écrire les données dans le fichier
 
-
+            // Validation de l'écriture
             ByteBuffer validationBuffer = ByteBuffer.allocate(config.getPageSize());
             file.seek(offset);
             file.read(validationBuffer.array());
