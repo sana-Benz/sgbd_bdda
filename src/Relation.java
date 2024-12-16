@@ -75,6 +75,7 @@ public class Relation {
 		return -1;
 	}
 
+	/*
 	 * Méthode writeToBuffer qui écrit l'enregistrement dans un tampon. Elle gère
 	 * les types de colonnes tels que INT, FLOAT, CHAR (longueur fixe) et VARCHAR
 	 * (longueur variable).
@@ -511,77 +512,77 @@ public class Relation {
 		}
 	}
 
-	/**
-	 * Cette méthode écrit l’enregistrement record dans la page de données identifiée par pageId, et
-	 *  renvoie son RecordId.
-	 *  On suppose que la page dispose d’assez d’espace disponible pour l’insertion.
-	 * @param record
-	 * @param pageId
-	 * @return RecordId du record écrit dans la dataPage
-	 */
-	//il faut peut etre vérifier que le record n'existe pas dans la datapage
-	//pour éviter les doublons
-	public RecordId writeRecordToDataPage(Record record, PageId pageId) {
-		try {
-			ByteBuffer buff = buffer.GetPage(pageId);
-			Buffer buffDataPage = new Buffer(pageId, buff);
-
-			// Ajoutez ces logs pour déboguer
-			System.out.println("offset pour slot directory: " + (config.getPageSize() - 8));
-			System.out.println(buff.position() == 0);
-			// Lire la position de début de l'espace libre
-			int posDebutLibre = buff.getInt(config.getPageSize() - 4);
-			System.out.println("Position début espace libre : " + posDebutLibre);
-
-			// Vérifier si l'espace libre est suffisant pour le record
-			buff.position(posDebutLibre);
-			int sizeRecord = writeToBuffer(record, buff, posDebutLibre);
-			System.out.println("Taille du record à écrire : " + sizeRecord);
-			if (sizeRecord < 0 || posDebutLibre + sizeRecord > config.getPageSize()) {
-				throw new RuntimeException("Pas assez d'espace pour écrire le record dans la page de données.");
-			}
-
-			// Écrire le record dans le buffer à partir de la position libre
-			//buff.position(posDebutLibre);
-			//writeToBuffer(record, buff, posDebutLibre); // Écrire le record
-
-			// Mettre à jour la position de début d'espace libre
-			posDebutLibre += sizeRecord;
-			buff.putInt(buff.capacity() - 4, posDebutLibre); // Met à jour pos début libre
-
-			// Mettre à jour le nombre de slots et écrire dans le slot directory
-			int nbSlots = buff.getInt(buff.capacity() - 8);
-			int slotIdx = nbSlots;
-			nbSlots++;
-			buff.putInt(buff.capacity() - 8, nbSlots); // Met à jour nb slots
-
-			// Calcul de la position pour le slot directory et mise à jour
-			int slotOffset = buff.capacity() - 8 - 8 * nbSlots; // 8 octets par slot (position + taille)
-			if (slotOffset < 0) {
-				throw new RuntimeException("Erreur de calcul de l'offset pour le slot directory.");
-			}
-			buff.position(slotOffset);
-			buff.putInt(posDebutLibre - sizeRecord); // Position du début du record
-			buff.putInt(sizeRecord); // Taille du record
-
-			// Marquer la page comme modifiée
-			buffDataPage.setDirty(true); // Ensure this method exists in your Buffer class
-
-			// Mettre à jour l'espace libre dans l'en-tête
-			updateFreeSpaceInHeader(pageId, -sizeRecord); // Ensure this method is defined
-
-			// Écriture sur disque
-			buffer.FreePage(pageId,true);
-			buffer.flushBuffers();
-
-			// Retourner un RecordId
-			return new RecordId(pageId, slotIdx);
-
-		} catch (Exception e) {
-			System.err.println("Erreur lors de l'écriture du record sur la page de données : " + e.getMessage());
-			throw new RuntimeException("Erreur lors de l'écriture du record sur la page de données", e);
-		}
-	}
+//	/**
+//	 * Cette méthode écrit l’enregistrement record dans la page de données identifiée par pageId, et
+//	 *  renvoie son RecordId.
+//	 *  On suppose que la page dispose d’assez d’espace disponible pour l’insertion.
+//	 * @param record
+//	 * @param pageId
+//	 * @return RecordId du record écrit dans la dataPage
+//	 */
+//	//il faut peut etre vérifier que le record n'existe pas dans la datapage
+//	//pour éviter les doublons
+//	public RecordId writeRecordToDataPage(Record record, PageId pageId) {
+//		try {
+//			ByteBuffer buff = buffer.GetPage(pageId);
+//			Buffer buffDataPage = new Buffer(pageId, buff);
+//
+//			// Ajoutez ces logs pour déboguer
+//			System.out.println("offset pour slot directory: " + (config.getPageSize() - 8));
+//			System.out.println(buff.position() == 0);
+//			// Lire la position de début de l'espace libre
+//			int posDebutLibre = buff.getInt(config.getPageSize() - 4);
+//			System.out.println("Position début espace libre : " + posDebutLibre);
+//
+//			// Vérifier si l'espace libre est suffisant pour le record
+//			buff.position(posDebutLibre);
+//			int sizeRecord = writeToBuffer(record, buff, posDebutLibre);
+//			System.out.println("Taille du record à écrire : " + sizeRecord);
+//			if (sizeRecord < 0 || posDebutLibre + sizeRecord > config.getPageSize()) {
+//				throw new RuntimeException("Pas assez d'espace pour écrire le record dans la page de données.");
+//			}
+//
+//			// Écrire le record dans le buffer à partir de la position libre
+//			//buff.position(posDebutLibre);
+//			//writeToBuffer(record, buff, posDebutLibre); // Écrire le record
+//
+//			// Mettre à jour la position de début d'espace libre
+//			posDebutLibre += sizeRecord;
+//			buff.putInt(buff.capacity() - 4, posDebutLibre); // Met à jour pos début libre
+//
+//			// Mettre à jour le nombre de slots et écrire dans le slot directory
+//			int nbSlots = buff.getInt(buff.capacity() - 8);
+//			int slotIdx = nbSlots;
+//			nbSlots++;
+//			buff.putInt(buff.capacity() - 8, nbSlots); // Met à jour nb slots
+//
+//			// Calcul de la position pour le slot directory et mise à jour
+//			int slotOffset = buff.capacity() - 8 - 8 * nbSlots; // 8 octets par slot (position + taille)
+//			if (slotOffset < 0) {
+//				throw new RuntimeException("Erreur de calcul de l'offset pour le slot directory.");
+//			}
+//			buff.position(slotOffset);
+//			buff.putInt(posDebutLibre - sizeRecord); // Position du début du record
+//			buff.putInt(sizeRecord); // Taille du record
+//
+//			// Marquer la page comme modifiée
+//			buffDataPage.setDirty(true); // Ensure this method exists in your Buffer class
+//
+//			// Mettre à jour l'espace libre dans l'en-tête
+//			updateFreeSpaceInHeader(pageId, -sizeRecord); // Ensure this method is defined
+//
+//			// Écriture sur disque
+//			buffer.FreePage(pageId,true);
+//			buffer.flushBuffers();
+//
+//			// Retourner un RecordId
+//			return new RecordId(pageId, slotIdx);
+//
+//		} catch (Exception e) {
+//			System.err.println("Erreur lors de l'écriture du record sur la page de données : " + e.getMessage());
+//			throw new RuntimeException("Erreur lors de l'écriture du record sur la page de données", e);
+//		}
+//	}
 
 
 

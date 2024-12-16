@@ -1,37 +1,46 @@
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class DiskManagerTests {
+	public static void main(String[] args) {
+		try {
+			// Initialize the configuration and DiskManager
+			DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
+			DiskManager dm = new DiskManager(config);
 
-	public static void main(String[] args) throws IOException {
-		//test modifié
+			// Test writing and reading pages
+			for (int i = 0; i < 5; i++) {
+				// Allocate a page
+				PageId pageId = dm.AllocPage();
+				System.out.println("Allocated Page: File " + pageId.getFileIdx() + ", Page " + pageId.getPageIdx());
 
-		DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
-		DiskManager dm = new DiskManager(config);
+				// Prepare data to write
+				ByteBuffer writeBuffer = ByteBuffer.allocate(config.getPageSize());
+				String dataToWrite = "Test data for page " + i;
+				writeBuffer.put(dataToWrite.getBytes());
+				//writeBuffer.flip(); // Prepare buffer for writing
 
-		// Boucle pour créer 3 fichiers avec 2 pages dans chacun
-		for (int pageNum = 0; pageNum < 6; pageNum++) {
-			// Allouer une page
-			PageId pageId = dm.AllocPage();
-			System.out.println("Page allouée : Fichier " + pageId.getFileIdx() + ", Page " + pageId.getPageIdx());
+				// Write data to the page
+				dm.WritePage(pageId, writeBuffer);
+				System.out.println("Written data to Page: " + pageId);
 
-			// Écriture dans la page
-			ByteBuffer buffer = ByteBuffer.allocate(config.getPageSize());
-			buffer.put("Test d'écriture".getBytes());
-			dm.WritePage(pageId, buffer);
-			System.out.println("Page " + pageNum + " écrite avec succès.");
+				// Prepare buffer to read back the data
+				ByteBuffer readBuffer = ByteBuffer.allocate(config.getPageSize());
+				dm.ReadPage(pageId, readBuffer);
+				readBuffer.flip(); // Prepare buffer for reading
 
-			// Sauvegarder l'état après l'écriture
-			dm.SaveState();
+				// Convert read data to string for comparison
+				byte[] readDataBytes = new byte[readBuffer.remaining()];
+				readBuffer.get(readDataBytes);
+				String readData = new String(readDataBytes).trim(); // Convert to string and trim
 
+				// Assert that the written data matches the read data
+				assert readData.equals(dataToWrite) : "Data mismatch! Expected: " + dataToWrite + ", but got: " + readData;
+				System.out.println("Data verified successfully for Page: " + pageId);
+			}
 
+			System.out.println("All tests completed successfully.");
+		} catch (Exception e) {
+			System.err.println("An error occurred: " + e.getMessage());
 		}
-		// test pour désallouer une page et la mettre dans pagesLibres
-		PageId pageid = new PageId(2,1);
-		dm.DeallocPage (pageid);
-		dm.SaveState();
-
-
-		System.out.println("Test terminé : 3 fichiers créés avec 2 pages écrites dans chacun.");
 	}
 }

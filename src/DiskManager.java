@@ -16,11 +16,11 @@ public class DiskManager {
     private DBConfig config;
     private List<Integer> pagesLibres= new ArrayList<>(); // Liste des pages libres d'un fichier
     private int nbMaxPages; // nombre maximal de pages dans un fichier
-    private static int indexFichierCourant = 0; 
+    private static int indexFichierCourant = 0;
     private Map<String, List<PageId>> pagesAllouees; // Map pour suivre les pages allouées par table
 
 
- 
+
     public DiskManager(DBConfig config) throws IOException {
         this.config = config;
         this.nbMaxPages = config.getDm_maxfilesize() / config.getPageSize();
@@ -37,16 +37,16 @@ public class DiskManager {
             binDataDirectory.mkdir(); // Créer le dossier Bin_Data
         }
 
-    } 
+    }
 
     private String construireNomFichier(int index){
-        return "F" + index +".rsdb" ; 
+        return "F" + index +".rsdb" ;
     }
 
     private String construireCheminFichier(int index){
         return config.getDbpath()+"/Bin_Data/"+construireNomFichier(index);
     }
- 
+
     private int nbPagesFichier(RandomAccessFile fichier) { // Calcule le nombre de pages qui existent/sont allouées dans le fichier
         try {
             int nbPagesFichier = (int) (fichier.length() / config.getPageSize());
@@ -158,38 +158,40 @@ public class DiskManager {
             } else {
                 System.out.println("Page written successfully: " + pageId);
             }
+            System.out.println("File size after writing: " + new File(construireCheminFichier(pageId.getFileIdx())).length());
         } catch (IOException e) {
             System.err.println("Error writing page: " + e.getMessage());
         }
     }
 
-
+    /**
+     *
      * Cette méthode désalloue une page, et la rajoute dans la liste des pages «libres».
      * @param pageId
      */
-     public void DeallocPage (PageId pageId){
+    public void DeallocPage (PageId pageId){
         // effacer le contenu de la page
         ByteBuffer emptyBuffer = ByteBuffer.allocate(config.getPageSize()); // Buffer vide rempli de zéros
         WritePage(pageId, emptyBuffer);
         pagesLibres.add(pageId.getPageIdx());
         SaveState();
-    
+
     }
     // Méthode pour désallouer les pages pour une table
     public void DeallocPagesForTable(String nomTable) {
-    List<PageId> pages = pagesAllouees.get(nomTable);
-    if (pages == null || pages.isEmpty()) {
-        System.out.println("Aucune page à désallouer pour la table " + nomTable + ".");
-        return;
-    }
+        List<PageId> pages = pagesAllouees.get(nomTable);
+        if (pages == null || pages.isEmpty()) {
+            System.out.println("Aucune page à désallouer pour la table " + nomTable + ".");
+            return;
+        }
 
-    for (PageId pageId : pages) {
-        DeallocPage(pageId); // Appel de la méthode DeallocPage pour chaque page
-    }
+        for (PageId pageId : pages) {
+            DeallocPage(pageId); // Appel de la méthode DeallocPage pour chaque page
+        }
 
-    pagesAllouees.remove(nomTable); // Supprimer les entrées de la map
-    System.out.println("Désallocation des pages pour la table " + nomTable + " effectuée avec succès !");
-}
+        pagesAllouees.remove(nomTable); // Supprimer les entrées de la map
+        System.out.println("Désallocation des pages pour la table " + nomTable + " effectuée avec succès !");
+    }
 
 
 
@@ -227,6 +229,15 @@ public class DiskManager {
         }
         try (BufferedReader reader = new BufferedReader(new FileReader(cheminFichier))) {
             String ligne;
+
+            if ((ligne = reader.readLine()) != null) {
+                // Extraire index fichier courant
+                if (ligne.startsWith("IndexFichierCourant:")) {
+                    String value = ligne.split(":")[1].trim();
+                    indexFichierCourant = Integer.parseInt(value);
+                }
+            }
+
             while ((ligne = reader.readLine()) != null) {
                 int pageIdx = Integer.parseInt(ligne.trim()); // Convertir la ligne en entier
                 pagesLibres.add(pageIdx); // Ajouter l'indice de la page libre à la liste
