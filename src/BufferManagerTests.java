@@ -60,7 +60,7 @@ public class BufferManagerTests{
  
         // Test 4 : Flusher les buffers modifiés (dirty)
         System.out.println(" Test 4 : Flusher les buffers modifiés");
-        pageData5.put(0, (byte) 1); // Modifier la première position du buffer
+        pageData4.put(0, (byte) 1); // Modifier la première position du buffer
         bufferManager.flushBuffers(); // Flusher les pages modifiées
 
         // Recharger la page depuis le disque pour vérifier

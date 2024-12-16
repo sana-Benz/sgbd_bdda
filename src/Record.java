@@ -12,6 +12,17 @@ public class Record {
 		this.recordId = recordId;
 	}
 
+	
+	public Relation getRelation() {
+		return relation;
+	}
+
+
+	public RecordId getRecordId() {
+		return recordId;
+	}
+
+
 	public ArrayList<String> getValeursRec() {
 		return valeursRec;
 	}

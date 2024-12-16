@@ -1,0 +1,79 @@
+public void AddTableToCurrentDatabase(Relation tab) {
+	    // Vérifie si une base de données active est sélectionnée
+	    if (currentDatabase == null || !databases.contains(currentDatabase)) {
+	        throw new IllegalStateException("Aucune base de données active ou inexistante.");
+	    }
+
+	    // Vérifie si l'instance de la table est valide
+	    if (tab == null || tab.getNomRelation() == null || tab.getNomRelation().trim().isEmpty()) {
+	        throw new IllegalArgumentException("La table à ajouter est invalide.");
+	    }
+
+	    // Vérifie si une table avec le même nom existe déjà dans la base active
+	    for (Relation relation : currentDatabase.getRelations()) {
+	        if (relation.getNomRelation().equalsIgnoreCase(tab.getNomRelation())) {
+	            throw new IllegalArgumentException(
+	                "Une table avec le nom <" + tab.getNomRelation() + "> existe déjà dans la base active.");
+	        }
+	    }
+
+	    // Ajoute la table à la liste de relations de la base active
+	    currentDatabase.getRelations().add(tab);
+	    System.out.println("Table <" + tab.getNomRelation() + "> ajoutée avec succès à la base de données <"
+	            + currentDatabase.getNom() + ">.");
+	}
+
+	/**
+	 * Supprime une base de données par son nom.
+	 *
+	 * @param nomBdd Le nom de la base de données à supprimer.
+	 * @throws IllegalArgumentException Si la base de données n'existe pas.
+	 */
+	public void RemoveDatabase(String nomBdd) {
+	    if (nomBdd == null || nomBdd.trim().isEmpty()) {
+	        throw new IllegalArgumentException("Le nom de la base de données est invalide.");
+	    }
+
+	    // Cherche la base de données dans la liste
+	    Database databaseToRemove = null;
+	    for (Database db : databases) {
+	        if (db.getNom().equalsIgnoreCase(nomBdd)) {
+	            databaseToRemove = db;
+	            break;
+	        }
+	    }
+
+	    // Vérifie si la base de données existe
+	    if (databaseToRemove == null) {
+	        throw new IllegalArgumentException("La base <" + nomBdd + "> n'existe pas.");
+	    }
+
+	    // Supprime la base de données
+	    databases.remove(databaseToRemove);
+
+	    // Vérifie si la base supprimée était la base active
+	    if (currentDatabase == databaseToRemove) {
+	        currentDatabase = null; // Réinitialise la base active
+	        System.out.println("La base de données active <" + nomBdd + "> a été supprimée.");
+	    }
+
+	    System.out.println("Base de données <" + nomBdd + "> supprimée avec succès.");
+	}
+
+	/**
+	 * Affiche les noms de toutes les bases de données existantes, une par ligne.
+	 * Si aucune base n'existe, affiche un message approprié.
+	 */
+	public void ListDatabases() {
+	    if (databases.isEmpty()) {
+	        System.out.println("Aucune base de données existante.");
+	    } else {
+	        System.out.println("Bases de données existantes :");
+	        for (Database db : databases) {
+	            System.out.println("- " + db.getNom());
+	        }
+	    }
+	}
+
+	
+}

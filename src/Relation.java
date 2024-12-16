@@ -7,7 +7,8 @@ public class Relation {
     private ArrayList<ColInfo> tableCols;
     private PageId headerPageId;
     private BufferManager buffer;  // Référence à BufferManager
-
+    private DiskManager disk;
+    private DBConfig config;
     
   
 	// Modifiez le constructeur pour accepter config et buffer en paramètre
@@ -17,6 +18,8 @@ public class Relation {
         this.tableCols = tableCols;
         this.headerPageId = headerPageId;
         this.buffer = buffer;  // Initialiser BufferManager
+        this.config = config;
+        this.disk = disk;
     }
 
     public String getNomRelation() {
@@ -30,8 +33,13 @@ public class Relation {
     public ArrayList<ColInfo> getTableCols() {
         return tableCols;
     }
+    
 
-    @Override
+    public PageId getHeaderPageId() {
+		return headerPageId;
+	}
+
+	@Override
     public String toString() {
         String TableInfo = "--" + nomRelation + "--";
         for (ColInfo col : tableCols) {
@@ -229,8 +237,9 @@ public class Relation {
      * @param record
      * @param pageId
      * @return RecordId du record écrit dans la dataPage
+     * @throws Exception 
      */
-    public RecordId writeRecordToDataPage(Record record, PageId pageId) {
+    public RecordId writeRecordToDataPage(Record record, PageId pageId) throws Exception {
     	
         // Charger la page via BufferManager
         ByteBuffer dataPageBuffer = buffer.GetPage(pageId);
@@ -273,6 +282,21 @@ public class Relation {
             buffer.FreePage(pageId, true);
         }
     }
+    
+    /*public RecordId InsertRecord(Record record) throws Exception {
+
+        Relation colInfo = record.getRelation(); // get the relation of a record
+        PageId freePageId = getFreeDataPageId(record.getValeursRec().size()); // get a dataPage that has enough space
+
+        if(!freePageId.estValid()){ 
+            //freePageId = addDataPage();
+            RecordId recordId = writeRecordToDataPage(record, freePageId);
+        }
+        //RecordId recordId= writeRecordToDataPage(record, freePageId);
+
+        return recordId;
+    }*/
+
 
     /**
      * Cette méthode liste tous les records
@@ -301,11 +325,8 @@ public class Relation {
 	 * @return la liste des records stockés dans la page identifiée par pageId
 	 */
 
-	ArrayList<Record> getRecordsInDataPage(PageId pageId) {
-		// il faut passer Dm et Bm et Config dans le constructeur
-		// ce passage est provisoire
-		bufferManager = new BufferManager(config, diskManager);
-		ByteBuffer bufferPage = bufferManager.GetPage(pageId);
+    ArrayList<Record> getRecordsInDataPage(PageId pageId) {
+		ByteBuffer bufferPage = buffer.GetPage(pageId);
 		ArrayList<Record> listeRecords = new ArrayList<>();
 
 		if (bufferPage == null) {
@@ -328,10 +349,10 @@ public class Relation {
 				int recordSize = bufferPage.getInt(slotOffset + 4);   // la taille du record (2eme 4o)
 
 				// Vérifier si le record est valide (taille > 0)
-				if (recordSize > 0) {
+				if (recordSize > 0 && recordStart!= -1) {
 					RecordId rid = new RecordId(pageId, slotIdx);
 					Record record = new Record(this, rid);
-					int bytesRead = record.readFromBuffer(bufferPage, recordStart);
+					int bytesRead = readFromBuffer(record,bufferPage, recordStart);
 					if (bytesRead != recordSize) {
 						throw new IllegalStateException("Erreur : taille de record incohérente.");
 					}
@@ -341,7 +362,7 @@ public class Relation {
 		} finally {
 			// Libérer la page après utilisation
 			try {
-				bufferManager.FreePage(pageId, false);
+				buffer.FreePage(pageId, false);
 			} catch (Exception e) {
 				System.out.println("Erreur lors de la libération de page après lecture dans getRecordsInDataPage : " + e.getMessage());
 			}
@@ -350,21 +371,28 @@ public class Relation {
 	}
 
 
+
 	/**
 	 * Cette méthode retourne un ArrayList qui contient les identifiants des pages contenues dans
 	 * la Header Page de la relation.
 	 * @return la liste des PageIds des pages de données.
 	 */
-	public ArrayList<PageId> getDataPages() {
+    public ArrayList<PageId> getDataPages() {
 		ArrayList<PageId> dataPages = new ArrayList<>();
 		ByteBuffer headerBuffer = null;
 
 		try {
 			// Charger la header page via le BufferManager
-			headerBuffer = bufferManager.GetPage(headerPageId);
+			headerBuffer = buffer.GetPage(headerPageId);
+
 
 			// Lire N (nombre de pages de données)
 			int N = headerBuffer.getInt(0);
+			System.out.println("Nombre de pages dans la Header Page : " + N);
+
+			if (N < 0 || N * 12 + 4 > headerBuffer.capacity()) {
+				throw new IllegalStateException("Nombre de pages invalide ou dépassement dans Header Page");
+			}
 
 			// Parcourir les N cases dans la header page
 			for (int i = 0; i < N; i++) {
@@ -376,15 +404,58 @@ public class Relation {
 				PageId dataPageId = new PageId(fileIdx, pageIdx);
 				dataPages.add(dataPageId);
 			}
+		} catch (Exception e) {
+			System.err.println("Erreur lors de la récupération des pages de données : " + e.getMessage());
+			e.printStackTrace();
 		} finally {
 			// Libérer la header page après lecture
 			try{
-				bufferManager.FreePage(headerPageId, false);
+				buffer.FreePage(headerPageId, false);
 			}catch (Exception e) {
 				System.out.println("Erreur lors de la libération de page après lecture dans getDataPages : " + e.getMessage());
 			}
 		}
 		return dataPages;
 	}
+	
+	// Méthode addDataPage
+		public void addDataPage() {
+			try {
+				// Étape 1 : Allouer une nouvelle page de données
+				PageId newPageId = disk.AllocPage();
+				System.out.println("Nouvelle page allouée : FileIdx = " + newPageId.getFileIdx() + ", PageIdx = " + newPageId.getPageIdx());
+
+				// Étape 2 : Lire la Header Page via BufferManager
+				ByteBuffer headerBuffer = buffer.GetPage(headerPageId); // Lire la Header Page depuis le BufferManager
+				System.out.println("Header Page chargée avec succès.");
+
+				// Étape 3 : Récupérer le nombre de pages actuelles
+				int numPages = headerBuffer.getInt(0);
+				System.out.println("Nombre actuel de pages dans la Header Page : " + numPages);
+
+				// Vérification : Est-ce qu'il y a assez d'espace dans la Header Page ?
+				if (4 + (numPages * 12) + 12 > headerBuffer.capacity()) {
+					throw new IllegalStateException("Pas assez de place pour ajouter une nouvelle page dans la Header Page");
+				}
+
+				// Étape 4 : Calculer l'offset pour savoir ou écrire les infos de la nouvelle page
+				int offset = 4 + (numPages * 12); // 4 octets pour le nombre de pages + 12 octets par page
+
+				// Ajouter les infos de la nouvelle page
+				headerBuffer.putInt(offset, newPageId.getFileIdx()); // Écrire fileIdx
+				headerBuffer.putInt(offset + 4, newPageId.getPageIdx()); // Écrire pageIdx
+				headerBuffer.putInt(offset + 8, config.getPageSize());     // Taille disponible initiale
+
+				// Mettre à jour le nombre de pages
+				headerBuffer.putInt(0, numPages + 1);
+				System.out.println("Nouvelle page ajoutée à la Header Page avec succès.");
+
+				// Étape 5 : Marquer la page comme modifiée (dirty) et libérer le buffer
+				buffer.FreePage(headerPageId, true); // true pour indiquer que la page est modifiée (dirty)
+
+			} catch (Exception e) {
+				System.err.println("Erreur lors de l'ajout d'une nouvelle page de données : " + e.getMessage());
+			}
+		}
 
 }
