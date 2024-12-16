@@ -17,7 +17,6 @@ public class DiskManagerTests {
 				ByteBuffer writeBuffer = ByteBuffer.allocate(config.getPageSize());
 				String dataToWrite = "Test data for page " + i;
 				writeBuffer.put(dataToWrite.getBytes());
-				//writeBuffer.flip(); // Prepare buffer for writing
 
 				// Write data to the page
 				dm.WritePage(pageId, writeBuffer);
@@ -34,7 +33,8 @@ public class DiskManagerTests {
 				String readData = new String(readDataBytes).trim(); // Convert to string and trim
 
 				// Assert that the written data matches the read data
-				assert readData.equals(dataToWrite) : "Data mismatch! Expected: " + dataToWrite + ", but got: " + readData;
+				assert readData.equals(dataToWrite)
+						: "Data mismatch! Expected: " + dataToWrite + ", but got: " + readData;
 				System.out.println("Data verified successfully for Page: " + pageId);
 			}
 

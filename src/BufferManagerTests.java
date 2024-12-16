@@ -1,76 +1,61 @@
 import java.nio.ByteBuffer;
 
 public class BufferManagerTests {
-    public static void main(String[] args) throws Exception {
-        DBConfig config = new DBConfig("../DB", 4096, 8192, 3, "LRU");
-        DiskManager diskManager = new DiskManager(config);
-        BufferManager bufferManager = new BufferManager(config, diskManager);
-
-        // Test 1: Load a page from disk
-        System.out.println("Test 1: Load a page from disk");
-        PageId pageId1 = new PageId(0, 0);
-        ByteBuffer pageData1 = bufferManager.GetPage(pageId1);
-        if (pageData1 != null) {
-            System.out.println("Page 1 loaded successfully!");
-        } else {
-            System.err.println("Failed to load Page 1!");
-        }
-
-        // Test 2: Load a page from the buffer pool
-        System.out.println("Test 2: Load a page from the buffer pool");
-        ByteBuffer pageData2 = bufferManager.GetPage(pageId1);
-        if (pageData1 == pageData2) {
-            System.out.println("Page 1 retrieved from memory!");
-        } else {
-            System.err.println("Failed: Page 1 not retrieved from memory!");
-        }
-
-        // Test 3: LRU replacement policy
-        System.out.println("Test 3: LRU replacement policy");
-
-        PageId pageId2 = new PageId(0, 1);
-        ByteBuffer pageData3 = bufferManager.GetPage(pageId2);
-
-        PageId pageId3 = new PageId(1, 0);
-        ByteBuffer pageData4 = bufferManager.GetPage(pageId3);
-
-// Free some pages to simulate unpinning
-        bufferManager.FreePage(pageId1, false);
-        bufferManager.FreePage(pageId2, false);
-
-// Load a new page to trigger LRU replacement
-        PageId pageId4 = new PageId(1, 1);
+    public static void main(String[] args) {
         try {
-            ByteBuffer pageData5 = bufferManager.GetPage(pageId4);
-            System.out.println("Page 1 replaced successfully as per LRU policy.");
-        } catch (IllegalStateException e) {
-            System.err.println("LRU replacement failed: " + e.getMessage());
-        }
+            // Configuration et initialisation
+            DBConfig config = new DBConfig("../DB", 4096, 8192, 3, "LRU");
+            DiskManager diskManager = new DiskManager(config);
+            BufferManager bufferManager = new BufferManager(config, diskManager);
 
+            // Étape 1: Allocation et écriture de données
+            System.out.println("\n[Étape 1] Allocation et écriture de données");
+            PageId pageId = diskManager.AllocPage(); // marche
+            ByteBuffer writeBuffer = ByteBuffer.allocate(config.getPageSize());
+            String data = "Données de test pour la page";
+            writeBuffer.put(data.getBytes());
+            diskManager.WritePage(pageId, writeBuffer); // marche
+            System.out.println("Page allouée et données écrites: " + pageId);
 
-        // Test 4: Flush dirty buffers
-        System.out.println("Test 4: Flush dirty buffers");
+            // Étape 2: Lecture et vérification des données
+            System.out.println("\n[Étape 2] Lecture et vérification des données");
+            ByteBuffer readBuffer = bufferManager.GetPage(pageId);
+            bufferManager.bufferPoolState();
+            byte[] readData = new byte[data.length()];
+            readBuffer.get(readData);
+            System.out.println("Données lues depuis la page: " + new String(readData));
 
-// Modify a page to mark it as dirty
-        if (pageData4 != null) {
-            pageData4.clear(); // Reset position to allow writing
-            pageData4.put((byte) 1); // Modify the buffer
-        }
+            // Étape 3: Modification, libération et vérification
+            System.out.println("\n[Étape 3] Modification, libération et vérification");
+            readBuffer.position(0);
+            readBuffer.put((byte) 1); // Modification des données
+            bufferManager.FreePage(pageId, true); // Libérer la page avec dirty bit
+            Buffer buffer = bufferManager.getBufferByPageId(pageId);
 
-// Free pages in the correct order
-        bufferManager.FreePage(pageId3, true); // Mark as dirty and free
-        bufferManager.FreePage(pageId4, false); // Ensure valid PageId from LRU replacement
-        bufferManager.FreePage(pageId1, false); // Ensure PageId is still in the buffer pool
+            assert buffer.getDirty() : "Le dirty bit n'est pas correctement défini!";
+            assert buffer.getPinCount() == 0 : "Le pin count devrait être 0 après la libération.";
 
-// Attempt to flush dirty buffers
-        try {
+            System.out.println("état du buffer pool après freepage");
+            bufferManager.bufferPoolState();
+
+            // Étape 4: Test de flushBuffers
+            System.out.println("\n[Étape 4] Test de flushBuffers");
             bufferManager.flushBuffers();
-            System.out.println("Dirty buffers flushed successfully!");
+            System.out.println("Buffers flushés avec succès.");
+            bufferManager.bufferPoolState();
+
+            // probably le flush n'ecrit pas correctement les pages modifiées
+
+            // Vérification finale: Lecture après flush
+            System.out.println("\n[Vérification finale] Lecture après flush");
+            ByteBuffer finalBuffer = ByteBuffer.allocate(config.getPageSize());
+            diskManager.ReadPage(pageId, finalBuffer);
+            byte[] finalData = new byte[data.length()];
+            finalBuffer.get(finalData);
+            System.out.println("Données finales après flush: " + new String(finalData));
+
         } catch (Exception e) {
-            System.err.println("Flush failed: " + e.getMessage());
+            e.printStackTrace();
         }
-
-
-
     }
 }
