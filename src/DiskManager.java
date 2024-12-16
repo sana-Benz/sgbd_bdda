@@ -107,8 +107,8 @@ public class DiskManager {
     public void ReadPage(PageId pageId, ByteBuffer buff) {
         try (RandomAccessFile file = new RandomAccessFile(construireCheminFichier(pageId.getFileIdx()), "r")) {
             int offset = pageId.getPageIdx() * config.getPageSize();
-            System.out.println("Reading Page: FileIdx = " + pageId.getFileIdx() + ", PageIdx = " + pageId.getPageIdx());
-            System.out.println("Calculated Offset: " + offset);
+            System.out.println("Lecture de la page : "+pageId);
+            //System.out.println("Offset: " + offset);
 
             file.seek(offset); // Seek to the correct position
             byte[] pageData = new byte[config.getPageSize()];
@@ -122,7 +122,7 @@ public class DiskManager {
             buff.clear(); // Prepare buffer for writing
             buff.put(pageData); // Copy the read bytes into the buffer
             buff.flip(); // Prepare buffer for reading
-            System.out.println("Buffer After Reading: " + Arrays.toString(Arrays.copyOf(buff.array(), 16)));
+            System.out.println("Buffer Après lecture: " + Arrays.toString(Arrays.copyOf(buff.array(), 16)));
         } catch (IOException e) {
             System.err.println("Error while reading page: " + e.getMessage());
         }
@@ -143,22 +143,20 @@ public class DiskManager {
             int offset = pageId.getPageIdx() * config.getPageSize();
             file.seek(offset);
 
-            // Write data
             byte[] pageData = new byte[config.getPageSize()];
             buff.position(0);
             buff.get(pageData, 0, config.getPageSize());
             file.write(pageData);
 
-            // Verify data was written
+
             ByteBuffer validationBuffer = ByteBuffer.allocate(config.getPageSize());
             file.seek(offset);
             file.read(validationBuffer.array());
             if (!Arrays.equals(validationBuffer.array(), pageData)) {
-                System.err.println("Validation Error: Data mismatch after writing page: " + pageId);
+                System.err.println("Erreur d'écriture de la page dans le disque : la data ne se correspond pas" + pageId);
             } else {
-                System.out.println("Page written successfully: " + pageId);
+                System.out.println("Page écrite avec succès dans le disque " + pageId);
             }
-            System.out.println("File size after writing: " + new File(construireCheminFichier(pageId.getFileIdx())).length());
         } catch (IOException e) {
             System.err.println("Error writing page: " + e.getMessage());
         }
@@ -262,7 +260,7 @@ public class DiskManager {
 
         // Call the WritePage method of DiskManager to persist the initialized page
         WritePage(pageId, pageBuffer); // Persist to disk
-        System.out.println("Page initialized: FileIdx = " + pageId.getFileIdx() + ", PageIdx = " + pageId.getPageIdx());
+        System.out.println("La page a été initialisée: FileIdx = " + pageId.getFileIdx() + ", PageIdx = " + pageId.getPageIdx());
     }
 
 

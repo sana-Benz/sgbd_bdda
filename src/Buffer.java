@@ -51,13 +51,18 @@ import java.nio.ByteBuffer;
 	    public void reset(){
 	        pinCount=0;
 	        setDirty(false);
-	        this.data.clear();//vider les données du buffer 
+	        this.data.clear();//vider les données du buffer
+			pageId = null;
 	    }
 		public boolean getDirty() {
 			return dirty; 
 		}
 		public void setDirty(boolean dirty) {
 			this.dirty = dirty;
+		}
+
+		public String toString(){
+			return "Le buffer contient la page  "+pageId+" qui a pincount= "+pinCount+" et dirtyBit "+dirty;
 		}
 	}
 
