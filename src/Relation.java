@@ -15,7 +15,7 @@ public class Relation {
 
 	// Modifiez le constructeur pour accepter config et buffer en paramètre
 	public Relation(String nomRelation, int nbCol, ArrayList<ColInfo> tableCols, DBConfig config, DiskManager disk,
-			BufferManager buffer) {
+					BufferManager buffer) {
 		this.nomRelation = nomRelation;
 		this.nbCol = nbCol;
 		this.tableCols = tableCols;
@@ -66,7 +66,6 @@ public class Relation {
 		return TableInfo;
 	}
 
-
 	public int getColIndex(String colName) {
 		for (int i = 0; i < tableCols.size(); i++) {
 			if (tableCols.get(i).getNameCol().equals(colName)) {
@@ -80,14 +79,14 @@ public class Relation {
 	 * Méthode writeToBuffer qui écrit l'enregistrement dans un tampon. Elle gère
 	 * les types de colonnes tels que INT, FLOAT, CHAR (longueur fixe) et VARCHAR
 	 * (longueur variable).
-	 * 
+	 *
 	 * @param record : un Record (dont les valeurs sont remplies correctement par
 	 * l’appelant)
-	 * 
+	 *
 	 * @param buff : ByteBuffer - le tampon dans lequel écrire.
-	 * 
+	 *
 	 * @param pos : int - la position de départ dans le tampon.
-	 * 
+	 *
 	 * @return int : la taille totale de l'enregistrement en octets, ou -1 en cas
 	 * d'erreur.
 	 */
@@ -124,7 +123,7 @@ public class Relation {
 						buff.putInt(floatBytes.length); // Écrire la longueur de la chaîne
 						buff.put(floatBytes); // Écrire les bytes de la chaîne
 						totalSize += 4 + floatBytes.length; // Ajouter la longueur totale (4 octets pour la taille +
-															// contenu)
+						// contenu)
 						System.out.println("Écrit FLOAT (en BigDecimal) : " + floatValue);
 						break;
 
@@ -148,7 +147,7 @@ public class Relation {
 						byte[] varcharBytes = value.getBytes(); // Convertir la chaîne en tableau de bytes
 						buff.put(varcharBytes); // Écrire les bytes de la chaîne dans le buffer
 						totalSize += 4 + varcharLength; // Ajouter 4 octets pour la longueur et la longueur de la chaîne
-														// à la taille totale
+						// à la taille totale
 						System.out.println("Écrit VARCHAR : " + value + " (longueur : " + varcharLength + ")");
 						break;
 
@@ -172,7 +171,7 @@ public class Relation {
 	 * Elle lit les valeurs du Record depuis le buffer à partir de pos, en supposant
 	 * que le
 	 * Record a été écrit avec writeToBuffer.
-	 * 
+	 *
 	 * @param record : dont la liste de valeurs est vide et sera remplie par cette
 	 *               méthode
 	 * @param buff
@@ -191,7 +190,7 @@ public class Relation {
 				switch (colInfo.getTypeCol()) {
 					case INT:
 						int valeur_int = buff.getInt(); // lit 4 octs et les interpter comme un entier et avance la pos
-														// du
+						// du
 						// tampon de 4 octs
 						record.getValeursRec().add(Integer.toString(valeur_int));
 						totalSize += 4;
@@ -210,12 +209,12 @@ public class Relation {
 					case CHAR:
 						int charLength = colInfo.getLengthChar();
 						byte[] charBytes = new byte[charLength]; // Créer un tableau de bytes pour stocker les données
-																	// lues
+						// lues
 						// depuis le tampon
 						buff.get(charBytes); // Lire les bytes correspondant à la longueur de la chaîne CHAR
 						String valeur_char = new String(charBytes).trim(); // remove spaces or extra-padding
 						record.getValeursRec().add(valeur_char); // Ajouter la valeur lue (chaîne) dans la liste des
-																	// valeurs
+						// valeurs
 						totalSize += charLength;
 						break;
 					case VARCHAR:
@@ -242,7 +241,7 @@ public class Relation {
 	 * identifiée par pageId, et
 	 * renvoie son RecordId.
 	 * On suppose que la page dispose d’assez d’espace disponible pour l’insertion.
-	 * 
+	 *
 	 * @param record
 	 * @param pageId
 	 * @return RecordId du record écrit dans la dataPage
@@ -254,7 +253,9 @@ public class Relation {
 
 			// Ajoutez ces logs pour déboguer
 			System.out.println("offset pour slot directory: " + (config.getPageSize() - 8));
-			System.out.println(buff.position() == 0);
+			if(buff.position() == 0){
+				System.out.println("le buffer "+buff+" est vide");
+			}
 			// Lire la position de début de l'espace libre
 			int posDebutLibre = buff.getInt(config.getPageSize() - 4);
 			System.out.println("Position début espace libre : " + posDebutLibre);
@@ -314,6 +315,7 @@ public class Relation {
 	 * assez de place
 	 * pour insérer le record ; si une telle page n’existe pas, la méthode
 	 * retournera null.
+	 *
 	 * @param recordSize : un entier
 	 *                   correspondant à la taille du record à insérer.
 	 * @return PageId d'une page disponible, null sinon
@@ -351,10 +353,9 @@ public class Relation {
 		return null; // No page found
 	}
 
-
 	/**
 	 * Cette méthode liste tous les records
-	 * 
+	 *
 	 * @return ArrayList de Record
 	 */
 	public ArrayList<Record> getAllRecords() {
@@ -376,7 +377,7 @@ public class Relation {
 	 * Cette méthode renvoie la liste des records stockés dans une page de type
 	 * HeapFile
 	 * qui veut dire un ensemble de tuples sauvegardées dans un ordre aléatoire.
-	 * 
+	 *
 	 * @param pageId : identifiant d'une page
 	 * @return la liste des records stockés dans la page identifiée par pageId
 	 */
@@ -437,7 +438,7 @@ public class Relation {
 	 * Cette méthode retourne un ArrayList qui contient les identifiants des pages
 	 * contenues dans
 	 * la Header Page de la relation.
-	 * 
+	 *
 	 * @return la liste des PageIds des pages de données.
 	 */
 	public ArrayList<PageId> getDataPages() {
@@ -484,76 +485,149 @@ public class Relation {
 	 */
 	public void addDataPage() {
 		try {
-			//HEADERPAGE
 			System.out.println("load headerPage pour ajouter une page");
 			ByteBuffer headerBuffer = buffer.GetPage(headerPageId);
 			Buffer headerPageBUFFER = new Buffer(headerPageId, headerBuffer);
 			int numPages = headerBuffer.getInt(0); // Read the current number of data pages
-			System.out.println("Nombre actuel de pages de données dans headerpage avant ajout : " + numPages);
-			buffer.FreePage(headerPageId, true);
-
-			//DATAPAGE
+			System.out.println("Nombre actuel de pages de données dans headerpage avant ajout d'une nouvelle page: " + numPages);
+			System.out.println("Mise à jour de la headerPage après ajout de datapage ");
 			System.out.println("allouer une nouvelle datapage");
 			PageId newPageId = disk.AllocPage();
-			ByteBuffer dataPageBuffer = buffer.GetPage(newPageId);
-			Buffer dataPageBUFFER = new Buffer(newPageId, dataPageBuffer);
-			dataPageBuffer.clear();
-
-			dataPageBuffer.putInt(dataPageBuffer.capacity() - 4, 0); // Free space starts at 0
-			dataPageBuffer.putInt(dataPageBuffer.capacity() - 8, 0); // Number of records (M) initialized to 0
-			System.out.println("Nouvelle page de données initialisée : " + newPageId + "espace vide commence à "
-					+ dataPageBuffer.getInt(dataPageBuffer.capacity() - 4)
-					+ " et nb slots est " + dataPageBuffer.getInt(dataPageBuffer.capacity() - 8));
-
-			//HEADERPAGE
-			System.out.println("Mise à jour de la headerPage après ajout de datapage ");
-			ByteBuffer headerBuffer1 = buffer.GetPage(headerPageId);
-			headerBuffer1.position(4 + numPages * 12); // Move to the correct position for the new page
-			headerBuffer1.putInt(newPageId.getFileIdx());
-			headerBuffer1.putInt(newPageId.getPageIdx());
-			headerBuffer1.putInt(dataPageBuffer.capacity() - 8); // Initial free space
+			headerBuffer.position(4 + numPages * 12); // Move to the correct position for the new page
+			headerBuffer.putInt(newPageId.getFileIdx());
+			headerBuffer.putInt(newPageId.getPageIdx());
+			headerBuffer.putInt(config.getPageSize() - 8); // Initial free space
 			int numPagesIncremente = numPages + 1;
-			headerBuffer1.putInt(0, numPagesIncremente); // Increment the number of pages
+			// Update the number of pages in the header
+			headerBuffer.putInt(0, numPagesIncremente); // Increment the number of pages
 			System.out.println("Nombre de pages de données incrémenté à : " + numPagesIncremente);
-
 			System.out.println(
 					"nouvelle position pour la prochaine page dans headerPage " + (4 + numPagesIncremente * 12));
 
 			// Free the pages after use
 			buffer.FreePage(headerPageId, true);
+			System.out.println("libération de la headerPage après ajout nouvelle page" + headerPageBUFFER);
+
+
+			ByteBuffer dataPageBuffer = buffer.GetPage(newPageId);
+			Buffer dataPageBUFFER = new Buffer(newPageId, dataPageBuffer);
+			dataPageBuffer.clear();
+			dataPageBuffer.putInt(dataPageBuffer.capacity() - 4, 0); // Free space starts at 0
+			dataPageBuffer.putInt(dataPageBuffer.capacity() - 8, 0); // Number of records (M) initialized to 0
+			System.out.println("Nouvelle page de données initialisée : " + newPageId + " espace vide commence à la position"
+					+ dataPageBuffer.getInt(dataPageBuffer.capacity() - 4)
+					+ " et nb slots est " + dataPageBuffer.getInt(dataPageBuffer.capacity() - 8));
+
+
 			buffer.FreePage(newPageId, true);
-			System.out.println("Pages libérées : HeaderPage (" + headerPageId + ") et DataPage (" + newPageId + ")");
+			System.out.println("libération de la nouvelle datapage" + dataPageBUFFER );
+
 			buffer.flushBuffers();
+			//disk.WritePage(headerPageId, headerBuffer);
+			//disk.WritePage(newPageId, dataPageBuffer);
+			buffer.bufferPoolState();
 
-			disk.WritePage(headerPageId, headerBuffer);
-			disk.WritePage(newPageId, dataPageBuffer);
-
-			System.out.println("je récupére les pages que je viens d'ajouter");
+			System.out.println("je récupére les pages que je viens d'ajouter dans la fonction addDatapage");
 			ByteBuffer headerpage = buffer.GetPage(headerPageId);
 			ByteBuffer datapage = buffer.GetPage(newPageId);
 			System.out.println(
-					"voici ce que g ecrit dans header page " + " nb pages dans headerpage :" + headerpage.get(0));
-			System.out.println("voici ce que g ecrit dans data page qui est vide apres "
-					+ " position début espace dispo" + datapage.get(config.getPageSize() - 4));
+					"voici ce que g ecrit dans header page :" + headerpage.get(0) +"page(s)");
+			System.out.println("voici ce que g ecrit dans data page: \n"
+					+ " position début espace dispo" + datapage.get(config.getPageSize() - 4) + "nb slots"+  datapage.get(config.getPageSize() - 8));
 
-
-//// Récupération du buffer (supposons que vous avez un seul buffer dans le pool)
-//			Buffer buffer = buffer.getBufferByPageId(headerPageId); // ou la page que vous avez ajoutée
-//
-//// Assertions pour vérifier l'état du buffer
-//			assert buffer != null : "Le buffer ne devrait pas être null après l'ajout de la page.";
-//			assert buffer.isValid() : "Le buffer devrait être valide après l'ajout de la page.";
-//			assert buffer.getPinCount() == 1 : "Le pin count du buffer devrait être 1 après l'ajout de la page.";
-//			assert buffer.getDirty() == false : "Le dirty bit du buffer devrait être false après l'écriture sur disque.";
-//
-//// Si les assertions passent, vous pouvez continuer
-//			System.out.println("Les assertions ont réussi, le buffer a été ajouté correctement.");
 		} catch (Exception e) {
 			System.err.println("Error in addDataPage: " + e.getMessage());
 		}
 	}
 
+	// /**
+	// * Cette méthode écrit l’enregistrement record dans la page de données
+	// identifiée par pageId, et
+	// * renvoie son RecordId.
+	// * On suppose que la page dispose d’assez d’espace disponible pour
+	// l’insertion.
+	// * @param record
+	// * @param pageId
+	// * @return RecordId du record écrit dans la dataPage
+	// */
+	// //il faut peut etre vérifier que le record n'existe pas dans la datapage
+	// //pour éviter les doublons
+	// public RecordId writeRecordToDataPage(Record record, PageId pageId) {
+	// try {
+	// ByteBuffer buff = buffer.GetPage(pageId);
+	// Buffer buffDataPage = new Buffer(pageId, buff);
+	//
+	// // Ajoutez ces logs pour déboguer
+	// System.out.println("offset pour slot directory: " + (config.getPageSize() -
+	// 8));
+	// System.out.println(buff.position() == 0);
+	// // Lire la position de début de l'espace libre
+	// int posDebutLibre = buff.getInt(config.getPageSize() - 4);
+	// System.out.println("Position début espace libre : " + posDebutLibre);
+	//
+	// // Vérifier si l'espace libre est suffisant pour le record
+	// buff.position(posDebutLibre);
+	// int sizeRecord = writeToBuffer(record, buff, posDebutLibre);
+	// System.out.println("Taille du record à écrire : " + sizeRecord);
+	// if (sizeRecord < 0 || posDebutLibre + sizeRecord > config.getPageSize()) {
+	// throw new RuntimeException("Pas assez d'espace pour écrire le record dans la
+	// page de données.");
+	// }
+	//
+	// // Écrire le record dans le buffer à partir de la position libre
+	// //buff.position(posDebutLibre);
+	// //writeToBuffer(record, buff, posDebutLibre); // Écrire le record
+	//
+	// // Mettre à jour la position de début d'espace libre
+	// posDebutLibre += sizeRecord;
+	// buff.putInt(buff.capacity() - 4, posDebutLibre); // Met à jour pos début
+	// libre
+	//
+	// // Mettre à jour le nombre de slots et écrire dans le slot directory
+	// int nbSlots = buff.getInt(buff.capacity() - 8);
+	// int slotIdx = nbSlots;
+	// nbSlots++;
+	// buff.putInt(buff.capacity() - 8, nbSlots); // Met à jour nb slots
+	//
+	// // Calcul de la position pour le slot directory et mise à jour
+	// int slotOffset = buff.capacity() - 8 - 8 * nbSlots; // 8 octets par slot
+	// (position + taille)
+	// if (slotOffset < 0) {
+	// throw new RuntimeException("Erreur de calcul de l'offset pour le slot
+	// directory.");
+	// }
+	// buff.position(slotOffset);
+	// buff.putInt(posDebutLibre - sizeRecord); // Position du début du record
+	// buff.putInt(sizeRecord); // Taille du record
+	//
+	// // Marquer la page comme modifiée
+	// buffDataPage.setDirty(true); // Ensure this method exists in your Buffer
+	// class
+	//
+	// // Mettre à jour l'espace libre dans l'en-tête
+	// updateFreeSpaceInHeader(pageId, -sizeRecord); // Ensure this method is
+	// defined
+	//
+	// // Écriture sur disque
+	// buffer.FreePage(pageId,true);
+	// buffer.flushBuffers();
+	//
+	// // Retourner un RecordId
+	// return new RecordId(pageId, slotIdx);
+	//
+	// } catch (Exception e) {
+	// System.err.println("Erreur lors de l'écriture du record sur la page de
+	// données : " + e.getMessage());
+	// throw new RuntimeException("Erreur lors de l'écriture du record sur la page
+	// de données", e);
+	// }
+	// }
 
+	// cette fonction parcourt les entrées des dataPages dans headerpage
+	// Lorsqu'elle trouve une correspondance avec la page spécifiée , elle met à
+	// jour l'espace libre
+	// (tailleLibre) en ajoutant la valeur de delta, marque la page d'en-tête comme
+	// dirty
 	private void updateFreeSpaceInHeader(PageId pageId, int delta) {
 		try {
 			ByteBuffer buff = buffer.GetPage(headerPageId);
@@ -576,7 +650,6 @@ public class Relation {
 			throw new RuntimeException(e);
 		}
 	}
-
 
 	// addRecord : Cette méthode vérifie d'abord si une page de données libre est
 	// disponible pour insérer

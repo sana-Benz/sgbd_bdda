@@ -6,7 +6,7 @@ public class TestRelation {
 	public static void main(String[] args) {
 		try {
 			System.out.println("\n Étape 1 : Initialisation des composants");
-			DBConfig config = new DBConfig("../DB", 8192, 24576, 1, "LRU");
+			DBConfig config = new DBConfig("../DB", 8192, 24576, 2, "LRU");
 			DiskManager diskManager = new DiskManager(config);
 			BufferManager bufferManager = new BufferManager(config, diskManager);
 
