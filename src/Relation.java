@@ -396,8 +396,7 @@ public class Relation {
 			int pageSize = bufferPage.capacity(); // Taille totale de la page
 			int offsetM = pageSize - 4; // Offset de M
 			int M = bufferPage.getInt(offsetM);
-			int DebutSlotDirectory = offsetM - (M * 8); // Chaque slot a 8 octets (4 pour position, 4 pour taille)
-
+			int DebutSlotDirectory = offsetM - 4 - (M * 8); // Chaque slot a 8 octets (4 pour position, 4 pour taille), et nbSlots prend 4 octets
 			for (int slotIdx = 0; slotIdx < M; slotIdx++) {
 				int slotOffset = DebutSlotDirectory + (slotIdx * 8); // Position du slot
 				if (slotOffset < 0 || slotOffset + 4 > bufferPage.capacity()) {
