@@ -1,5 +1,7 @@
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 public class BufferManager {
 	private final DBConfig config;
@@ -39,7 +41,7 @@ public class BufferManager {
 		System.out.println("On demande de mettre la page"+pageId+"dans le bufferPool");
 
 		for (Buffer buffer : bufferPool) {
-			if (buffer.getPageId().equals(pageId)) {
+			if (buffer.getPageId().equals(pageId)&& buffer.isValid()) {
 				buffer.incrementPinCount();
 				updateBufferOrder(buffer);
 				System.out.println("la page demandée est déjà dans le bufferpool "+ buffer);
@@ -47,9 +49,25 @@ public class BufferManager {
 			}
 		}
 		System.out.println("La page demandée"+pageId+" n'est pas dans le bufferPool");
-		//si la page n'est pas dans les buffers et que le pool est plein
+		// on cherche si on trouve un buffer invalide on le met comme victime
+		for (Buffer buffer : bufferPool) {
+			if (buffer.getPageId().equals(pageId)&& !buffer.isValid()) {
+				System.out.println("On a choisi comme victime ce buffer invalide "+ buffer);
+				ByteBuffer newData= loadPageFromDisk(pageId);
+				buffer.setData(newData);
+				buffer.incrementPinCount();
+				buffer.setValid(true);
+				updateBufferOrder(buffer);
+
+
+			}
+		}
+
+			//sinon si le bufferpool est plein avec des buffers valides
+
+		//si la page n'est pas dans les buffers et que le pool est plein avec des buffers valides on doit choisir une victime
 		if(bufferPool.size()>=config.getBm_buffercount()) {
-			System.out.println("le bufferPool est plein");
+			System.out.println("le bufferPool est plein avec des buffers valides");
 			System.out.println("la page demandée n'est pas dans bufferPool et le pool est plein");
 			Buffer bufferToReplace= selectbufferToReplace();
 
@@ -63,7 +81,7 @@ public class BufferManager {
 			System.out.println("la page à écraser dans le bufferpool n'a pas été modifiée "+bufferToReplace.getPageId());
 			ByteBuffer newData= loadPageFromDisk(pageId);
 			bufferToReplace.setData(newData);// on met à jour les données du buffer
-			bufferToReplace.reset();//rénitialise le pin_count et le dirty flag
+			bufferToReplace.reset();//rénitialise le pin_count et le dirty flag et met le buffer comme invalide
 			updateBufferOrder(bufferToReplace);
 
 			return bufferToReplace.getData();
@@ -79,6 +97,8 @@ public class BufferManager {
 		return newBufferObj.getData();
 
 	}
+
+
 
 	private ByteBuffer loadPageFromDisk(PageId pageId) {
 		ByteBuffer buffer = ByteBuffer.allocate(config.getPageSize());
@@ -157,6 +177,7 @@ public class BufferManager {
 			if (buffer.getDirty()) {
 				diskManager.WritePage(buffer.getPageId(), buffer.getData());
 				System.out.println("écriture de la page "+buffer.getPageId()+"car son dirty bit est "+buffer.getDirty());
+				buffer.setDirty(false);
 			}
 			if (buffer.getPinCount() == 0) {
 				System.out.println("la page n'est plus en cours d'utilisation "+buffer.getPageId() +" flush de la page");
@@ -178,12 +199,42 @@ public class BufferManager {
 	}
 
 	public void bufferPoolState(){
-		for (Buffer buffer : bufferPool) {
-			System.out.println("Voici l'état du bufferPool");
-			System.out.println(buffer);
-			System.out.println("Fin de l'état du bufferPool");
+		System.out.println("\nVoici l'état du bufferPool");
 
+		// Initialiser les listes pour les buffers valides et non valides
+		List<Buffer> buffersValides = new ArrayList<>();
+		List<Buffer> buffersNonValides = new ArrayList<>();
+
+		// Trier les buffers
+		for (Buffer buffer : bufferPool) {
+			if (buffer.isValid()) {
+				buffersValides.add(buffer);
+			} else {
+				buffersNonValides.add(buffer);
+			}
 		}
 
+		// Affichage des buffers valides
+		System.out.println("\nVoici les buffers valides :");
+		if (buffersValides.isEmpty()) {
+			System.out.println("Aucun buffer valide.");
+		} else {
+			for (Buffer buffer : buffersValides) {
+				System.out.println(buffer);
+			}
+		}
+
+		// Affichage des buffers non valides
+		System.out.println("\nVoici les buffers non valides :");
+		if (buffersNonValides.isEmpty()) {
+			System.out.println("Aucun buffer non valide.");
+		} else {
+			for (Buffer buffer : buffersNonValides) {
+				System.out.println(buffer);
+			}
+		}
+
+		System.out.println("\nFin de l'état du bufferPool");
 	}
+
 }

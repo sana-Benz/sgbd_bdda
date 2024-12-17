@@ -464,11 +464,15 @@ public class Relation {
 	 */
 	public void addDataPage() {
 		try {
+			//HEADERPAGE
 			System.out.println("load headerPage pour ajouter une page");
 			ByteBuffer headerBuffer = buffer.GetPage(headerPageId);
 			Buffer headerPageBUFFER = new Buffer(headerPageId,headerBuffer);
 			int numPages = headerBuffer.getInt(0); // Read the current number of data pages
 			System.out.println("Nombre actuel de pages de données dans headerpage avant ajout : " + numPages);
+			buffer.FreePage(headerPageId, true);
+
+			//DATAPAGE
 			System.out.println("allouer une nouvelle datapage");
 			PageId newPageId = disk.AllocPage();
 			ByteBuffer dataPageBuffer = buffer.GetPage(newPageId);
@@ -478,35 +482,39 @@ public class Relation {
 			dataPageBuffer.putInt(dataPageBuffer.capacity()-8,0); // Number of records (M) initialized to 0
 			System.out.println("Nouvelle page de données initialisée : " + newPageId + "espace vide commence à "+ dataPageBuffer.getInt(dataPageBuffer.capacity()-4)
 					+ " et nb slots est " + dataPageBuffer.getInt(dataPageBuffer.capacity()-8));
+			buffer.FreePage(newPageId, true);
 
+			//HEADERPAGE
 			System.out.println("Mise à jour de la headerPage après ajout de datapage ");
-			headerBuffer.position(4 + numPages * 12); // Move to the correct position for the new page
-			headerBuffer.putInt(newPageId.getFileIdx());
-			headerBuffer.putInt(newPageId.getPageIdx());
-			headerBuffer.putInt(dataPageBuffer.capacity() - 8); // Initial free space
+			ByteBuffer headerBuffer1 = buffer.GetPage(headerPageId);
+			headerBuffer1.position(4 + numPages * 12); // Move to the correct position for the new page
+			headerBuffer1.putInt(newPageId.getFileIdx());
+			headerBuffer1.putInt(newPageId.getPageIdx());
+			headerBuffer1.putInt(dataPageBuffer.capacity() - 8); // Initial free space
 			int numPagesIncremente = numPages + 1;
-			// Update the number of pages in the header
-			headerBuffer.putInt(0, numPagesIncremente); // Increment the number of pages
+			headerBuffer1.putInt(0, numPagesIncremente); // Increment the number of pages
 			System.out.println("Nombre de pages de données incrémenté à : " + numPagesIncremente);
 			System.out.println("nouvelle position pour la prochaine page dans headerPage "+ (4 + numPagesIncremente * 12) );
-
+			buffer.FreePage(headerPageId, true);
 
 			// Free the pages after use
 			buffer.FreePage(headerPageId, true);
 			buffer.FreePage(newPageId, true);
 			System.out.println("Pages libérées : HeaderPage (" + headerPageId + ") et DataPage (" + newPageId + ")");
-
 			buffer.flushBuffers();
-			disk.WritePage(headerPageId,headerBuffer);
-			disk.WritePage(newPageId,dataPageBuffer);
-
-			System.out.println("je récupére les pages que je viens d'ajouter");
-			ByteBuffer headerpage = buffer.GetPage(headerPageId);
-			ByteBuffer datapage = buffer.GetPage(newPageId);
-			System.out.println("voici ce que g ecrit dans header page "+ " nb pages dans headerpage :" + headerpage.get(0));
-			System.out.println("voici ce que g ecrit dans data page qui est vide apres "+ " position début espace dispo" +datapage.get(config.getPageSize()-4));
 
 
+//// Récupération du buffer (supposons que vous avez un seul buffer dans le pool)
+//			Buffer buffer = buffer.getBufferByPageId(headerPageId); // ou la page que vous avez ajoutée
+//
+//// Assertions pour vérifier l'état du buffer
+//			assert buffer != null : "Le buffer ne devrait pas être null après l'ajout de la page.";
+//			assert buffer.isValid() : "Le buffer devrait être valide après l'ajout de la page.";
+//			assert buffer.getPinCount() == 1 : "Le pin count du buffer devrait être 1 après l'ajout de la page.";
+//			assert buffer.getDirty() == false : "Le dirty bit du buffer devrait être false après l'écriture sur disque.";
+//
+//// Si les assertions passent, vous pouvez continuer
+//			System.out.println("Les assertions ont réussi, le buffer a été ajouté correctement.");
 		} catch (Exception e) {
 			System.err.println("Error in addDataPage: " + e.getMessage());
 		}
