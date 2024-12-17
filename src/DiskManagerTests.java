@@ -34,7 +34,10 @@ public class DiskManagerTests {
 				String readData = new String(readDataBytes).trim(); // Convert to string and trim
 
 				// Assert that the written data matches the read data
-				assert readData.equals(dataToWrite) : "Data mismatch! Expected: " + dataToWrite + ", but got: " + readData;
+
+				assert readData.equals(dataToWrite)
+						: "Data mismatch! Expected: " + dataToWrite + ", but got: " + readData;
+
 				System.out.println("Data verified successfully for Page: " + pageId);
 			}
 
