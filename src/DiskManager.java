@@ -19,6 +19,7 @@ public class DiskManager {
     private static int indexFichierCourant = 0;
     private Map<String, List<PageId>> pagesAllouees; // Map pour suivre les pages allouées par table
 
+
     public DiskManager(DBConfig config) throws IOException {
         this.config = config;
         this.nbMaxPages = config.getDm_maxfilesize() / config.getPageSize();
@@ -37,6 +38,7 @@ public class DiskManager {
 
     }
 
+
     private String construireNomFichier(int index) {
         return "F" + index + ".rsdb";
     }
@@ -44,6 +46,7 @@ public class DiskManager {
     private String construireCheminFichier(int index) {
         return config.getDbpath() + "/Bin_Data/" + construireNomFichier(index);
     }
+
 
     private int nbPagesFichier(RandomAccessFile fichier) { // Calcule le nombre de pages qui existent/sont allouées dans
                                                            // le fichier
@@ -155,8 +158,10 @@ public class DiskManager {
             file.seek(offset);
             file.read(validationBuffer.array());
             if (!Arrays.equals(validationBuffer.array(), pageData)) {
+
                 System.err
                         .println("Erreur d'écriture de la page dans le disque : la data ne se correspond pas" + pageId);
+
             } else {
                 System.out.println("Page écrite avec succès dans le disque " + pageId);
             }
@@ -178,6 +183,7 @@ public class DiskManager {
         WritePage(pageId, emptyBuffer);
         pagesLibres.add(pageId.getPageIdx());
         SaveState();
+
 
     }
 
@@ -267,8 +273,10 @@ public class DiskManager {
 
         // Call the WritePage method of DiskManager to persist the initialized page
         WritePage(pageId, pageBuffer); // Persist to disk
+
         System.out.println(
                 "La page a été initialisée: FileIdx = " + pageId.getFileIdx() + ", PageIdx = " + pageId.getPageIdx());
+
     }
 
 }

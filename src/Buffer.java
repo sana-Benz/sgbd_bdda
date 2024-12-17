@@ -5,12 +5,14 @@ import java.nio.ByteBuffer;
 	    private ByteBuffer data;
 	    private int pinCount;
 	    private boolean dirty;
+		private boolean isValid;
 
 	    public Buffer(PageId pageId, ByteBuffer data) {
 	        this.pageId = pageId;
 	        this.data = data;
 	        this.pinCount = 0;
 	        this.setDirty(false);
+			this.isValid = true; // Initialement valide
 	    }
 	    //getters
 	    public PageId getPageId() {
@@ -25,7 +27,15 @@ import java.nio.ByteBuffer;
 	        return pinCount;
 	    }
 
-	 // Incrémente le pin_count
+		public boolean isValid() {
+			return isValid;
+		}
+
+		public void setValid(boolean valid) {
+			isValid = valid;
+		}
+
+		// Incrémente le pin_count
 	    public void incrementPinCount() {
 	        this.pinCount++;
 	    } 
@@ -48,11 +58,15 @@ import java.nio.ByteBuffer;
 	        this.pinCount = pinCount;
 	    }
 
+		//cette méthode est utilisée quand je veux effacer une page du bufferpool (avec flushBuffer)
+		//ce buffer sera alors la première victime si on veut remplacer une page
 	    public void reset(){
 	        pinCount=0;
 	        setDirty(false);
 	        this.data.clear();//vider les données du buffer
-			pageId = null;
+
+			isValid = false; // Marquer le buffer comme non valide
+
 	    }
 		public boolean getDirty() {
 			return dirty; 
@@ -64,5 +78,6 @@ import java.nio.ByteBuffer;
 		public String toString(){
 			return "Le buffer contient la page  "+pageId+" qui a pincount= "+pinCount+" et dirtyBit "+dirty;
 		}
+
 	}
 

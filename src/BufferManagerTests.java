@@ -20,6 +20,9 @@ public class BufferManagerTests {
             diskManager.WritePage(pageId, writeBuffer); // marche
             System.out.println("Page allouée et données écrites: " + pageId);
 
+            bufferManager.bufferPoolState();
+
+
             // Étape 2: Lecture et vérification des données
             System.out.println("\n[Étape 2] Lecture et vérification des données");
             ByteBuffer readBuffer = bufferManager.GetPage(pageId);
@@ -28,6 +31,9 @@ public class BufferManagerTests {
             readBuffer.get(readData); // Lire les données du buffer
             String readString = new String(readData, StandardCharsets.UTF_8); // Convertir en chaîne
             System.out.println("Données lues depuis la page: " + readString);
+
+            bufferManager.bufferPoolState();
+
 
             // Étape 3: Modification, libération et vérification
             System.out.println("\n[Étape 3] Modification, libération et vérification");
