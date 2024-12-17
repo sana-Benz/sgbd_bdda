@@ -24,6 +24,9 @@ public class DataPageHoldRecordIterator implements IRecordIterator {
         }
         return records.get(currentIndex++); // Retourne le record courant et avance
     }
+    public boolean hasNext() {
+        return currentIndex < records.size(); // Vérifie s'il reste des records à lire
+    }
 
     // Réinitialise l'itérateur pour repartir depuis le début
     @Override

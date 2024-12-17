@@ -10,7 +10,7 @@ public class PageDirectoryIterator {
     public PageDirectoryIterator(List<PageId> pageIds, BufferManager bufferManager) {
         this.pageIds = pageIds;
         this.currentIndex = 0; // On commence au début
-        this.bufferManager = bufferManager;
+        this.bufferManager = bufferManager; 
     }
 
     // Retourne le prochain PageId ou null s'il n'y en a plus
@@ -38,6 +38,6 @@ public class PageDirectoryIterator {
 
     // Ferme l'itérateur et libère les ressources
     public void Close() {
-        pageIds = null; // Libération de la liste (GC s'en occupera)
+        pageIds = null; // Libération de la liste
     }
 }
