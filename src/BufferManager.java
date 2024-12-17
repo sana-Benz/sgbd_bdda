@@ -57,7 +57,9 @@ public class BufferManager {
 				buffer.setData(newData);
 				buffer.incrementPinCount();
 				buffer.setValid(true);
+				buffer.setDirty(false);
 				updateBufferOrder(buffer);
+				return buffer.getData();
 
 
 			}
