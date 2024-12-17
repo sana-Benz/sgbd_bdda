@@ -21,8 +21,7 @@ public class ProjectOperator implements IRecordIterator {
         // Créer un nouvel enregistrement avec uniquement les attributs spécifiés
         Record recordProjete = new Record(recordActuel.getRelation(), recordActuel.getRecordId());
         for (String attribut : attributsAConserver) {
-            String valeur = recordActuel.getValeurByNomCol(attribut);
-            recordProjete.addAttribut(attribut, valeur);  // Ajouter l'attribut à l'enregistrement projeté
+            recordProjete.addAttribut(attribut);  // Ajouter l'attribut à l'enregistrement projeté
         }
 
         return recordProjete;

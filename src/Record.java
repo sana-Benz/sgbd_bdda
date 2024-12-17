@@ -32,9 +32,13 @@ public class Record {
 	    }
 	    return valeurRec(indexCol);
 	}
+	  // Méthode addAttribut pour ajouter un attribut à l'enregistrement
+    public void addAttribut(String value) {
+        this.valeursRec.add(value); // Ajouter un attribut à la liste de valeurs
+    }
 	// Récupère l'ID du record
 	public RecordId getRecordId() {
-	    return recordId;
+	    return recordId; 
 	}
 
 	// Récupère la relation associée au record
