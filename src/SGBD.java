@@ -335,27 +335,26 @@ public class SGBD {
             while ((values = csvReader.readNext()) != null) {
                 lineNumber++;
 
-                // Vérification du nombre de colonnes
-                if (values.length != nbColonnes) {
+                // Vérifiez si le nombre de colonnes correspond
+                if (values.length != relation.getNbCol()) {
+                    System.out.println("Erreur à la ligne " + lineNumber + " : Nombre de colonnes incorrect.");
                     errorCount++;
-                    System.out.println("Le nombre de valeurs ne correspond pas au nombre de colonnes pour la ligne " + lineNumber + " : " + String.join(",", values));
+                    continue;
+                }
 
-                    if (errorCount >= maxErrors) {
-                        System.out.println("Nombre d'erreurs maximum atteint. Arrêt de l'insertion.");
-                        break;
+                // Insérez chaque enregistrement
+                try {
+                    Record record = new Record(relation, relation.allocateNextRecordId());
+                    ArrayList<String> valeursRec = new ArrayList<>();
+                    for (String value : values) {
+                        valeursRec.add(value.trim().replace("\"", ""));
                     }
-
-                    continue; // Passer à la ligne suivante
+                    record.setValeursRec(valeursRec);
+                    relation.addRecord(record); // Ajoute le record à la relation
+                } catch (Exception e) {
+                    System.out.println("Erreur lors de l'insertion de la ligne " + lineNumber + ": " + e.getMessage());
+                    errorCount++;
                 }
-
-                // Créer un nouvel enregistrement
-                Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), lineNumber));
-                ArrayList<String> valeursRec = new ArrayList<>();
-                for (String value : values) {
-                    valeursRec.add(value.trim().replace("\"", "")); // Enlever les guillemets
-                }
-                record.setValeursRec(valeursRec);
-                relation.addRecord(record);
             }
 
             System.out.println("Insertion en bloc terminée avec succès !");
