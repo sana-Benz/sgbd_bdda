@@ -1,37 +1,30 @@
-import java.util.*;
-
-
-
 public class Condition {
-    private String column;
+    private String columnName;
     private String operator;
     private String value;
 
-    public Condition(String condition) {
-        // Parsez la condition pour extraire la colonne, l'opérateur et la valeur
-        String[] parts = condition.split(" ");
-        this.column = parts[0];
-        this.operator = parts[1];
-        this.value = parts[2].replace("\"", ""); 
+    public Condition(String whereClause) {
+        String[] parts = whereClause.split("\\s*([=<>]+)\\s*");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Clause WHERE invalide : " + whereClause);
+        }
+        this.columnName = parts[0].trim();
+        this.operator = whereClause.replaceAll(".*?([=<>]+).*", "$1");
+        this.value = parts[1].trim();
+
     }
 
     public boolean evaluate(Record record) {
-        String recordValue = record.getValeurByNomCol(column); // Utilisez la méthode ajoutée
+        String recordValue = record.getValeurByNomCol(columnName).toString();
         switch (operator) {
             case "=":
                 return recordValue.equals(value);
-            case "<":
-                return recordValue.compareTo(value) < 0;
             case ">":
-                return recordValue.compareTo(value) > 0;
-            case "<=":
-                return recordValue.compareTo(value) <= 0;
-            case ">=":
-                return recordValue.compareTo(value) >= 0;
-            case "<>":
-                return !recordValue.equals(value);
+                return Double.parseDouble(recordValue) > Double.parseDouble(value);
+            case "<":
+                return Double.parseDouble(recordValue) < Double.parseDouble(value);
             default:
-                return false;
+                throw new IllegalArgumentException("Opérateur non supporté : " + operator);
         }
     }
 }

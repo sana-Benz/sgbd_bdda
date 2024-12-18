@@ -1,5 +1,6 @@
 import java.io.IOException;
 
+
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -367,7 +368,8 @@ public class SGBD {
 
 
     
-    public void processSelectCommand(String command) {
+    public void processSelectCommand(String command) {   //SELECT * FROM tab1 WHERE c1 = 1.5
+
         String sqlSelectPattern =
                 "^\\s*SELECT\\s+" +     // SELECT keyword
                         "([\\w*,\\s]+)\\s+" +   // Columns (wildcard, names, comma-separated)
@@ -403,10 +405,21 @@ public class SGBD {
         }
 
         // Traitement des colonnes à afficher
-        String[] columns = matcher.group(1).split(",");
+       /* String[] columns = matcher.group(1).split(",");
         ArrayList<String> selectedColumns = new ArrayList<>();
         for (String column : columns) {
             selectedColumns.add(column.trim());
+        }*/
+        
+     // Gestion des colonnes à afficher
+        String[] colonnes = matcher.group(1).trim().equals("*")
+                ? relation.getAllColumnNames().toArray(new String[0]) // Récupérer tous les noms de colonnes
+                : matcher.group(1).split(",");
+
+        ArrayList<String> selectedColumns = new ArrayList<>();
+        for (String column : colonnes) {
+            selectedColumns.add(column.trim());
+
         }
 
         // Vérification de la clause WHERE

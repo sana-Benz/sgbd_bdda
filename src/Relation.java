@@ -50,6 +50,14 @@ public class Relation {
 	public ArrayList<ColInfo> getTableCols() {
 		return tableCols;
 	}
+	
+	public ArrayList<String> getAllColumnNames() {
+	    ArrayList<String> nomsColonnes = new ArrayList<>();
+	    for (ColInfo colInfo : tableCols) {
+	        nomsColonnes.add(colInfo.getNameCol()); // Supposant que ColInfo possède une méthode getNomCol()
+	    }
+	    return nomsColonnes;
+	}
 
 	public PageId getHeaderPageId() {
 		return headerPageId;
