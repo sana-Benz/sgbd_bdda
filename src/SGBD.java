@@ -302,7 +302,7 @@ public class SGBD {
     
    
 
-    public void processBulkInsertCommand(String command) throws Exception {
+    public void processBulkInsertCommand(String command) throws Exception {// BULKINSERT INTO tab1 CSV.csv
         String[] parts = command.split(" ");
         if (parts.length != 4 || !parts[0].equals("BULKINSERT") || !parts[1].equals("INTO")) {
             System.out.println("Commande invalide.");
@@ -330,7 +330,7 @@ public class SGBD {
             String[] values;
             int lineNumber = 0;
             int errorCount = 0;
-            int maxErrors = 5;
+            int maxErrors = 1000;
 
             while ((values = csvReader.readNext()) != null) {
                 lineNumber++;
@@ -368,7 +368,7 @@ public class SGBD {
 
 
     
-    public void processSelectCommand(String command) {   //SELECT * FROM tab1 WHERE c1 = 1.5
+   /* public void processSelectCommand(String command) {   //SELECT * FROM tab1 WHERE c1 = 1.5
         String sqlSelectPattern =
                 "^\\s*SELECT\\s+" +     // SELECT keyword
                         "([\\w*,\\s]+)\\s+" +   // Columns (wildcard, names, comma-separated)
@@ -401,7 +401,7 @@ public class SGBD {
         if (relation == null) {
             System.out.println("La relation " + relationName + " n'existe pas.");
             return;
-        }
+        }*/
 
         // Traitement des colonnes à afficher
        /* String[] columns = matcher.group(1).split(",");
@@ -410,7 +410,7 @@ public class SGBD {
             selectedColumns.add(column.trim());
         }*/
         
-     // Gestion des colonnes à afficher
+   /*  // Gestion des colonnes à afficher
         String[] colonnes = matcher.group(1).trim().equals("*")
                 ? relation.getAllColumnNames().toArray(new String[0]) // Récupérer tous les noms de colonnes
                 : matcher.group(1).split(",");
@@ -453,8 +453,142 @@ public class SGBD {
             }
         }
         System.out.println("Total records = " + totalRecords);
+    }*/
+
+    
+    
+    //testtt select avec AND
+    
+    public void processSelectCommand(String command) {
+        // Définir un modèle pour analyser la commande SELECT
+        String sqlSelectPattern =
+                "^\\s*SELECT\\s+" +           // Mot-clé SELECT
+                "([\\w*,\\s]+)\\s+" +         // Colonnes (wildcard ou noms séparés par des virgules)
+                "FROM\\s+" +                  // Mot-clé FROM
+                "(\\w+)\\s*" +                // Nom de la table
+                "(?:WHERE\\s+(.+))?$";        // Clause WHERE optionnelle
+
+        // Compiler l'expression régulière avec insensibilité à la casse
+        Pattern pattern = Pattern.compile(sqlSelectPattern, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(command.trim()); // Nettoyer et appliquer le modèle
+
+        // Vérifier si la commande correspond au modèle
+        boolean valid = matcher.matches();
+        if (!valid) {
+            System.out.println("Commande invalide.");
+            return;
+        }
+
+        // Extraire les parties de la commande
+        String relationName = matcher.group(2); // Nom de la table
+        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
+        if (relation == null) {
+            System.out.println("La relation " + relationName + " n'existe pas.");
+            return;
+        }
+
+        // Récupérer la clause WHERE (si elle existe)
+        String whereClause = null;
+        if (matcher.groupCount() > 2 && matcher.group(3) != null) {
+            whereClause = matcher.group(3).trim();
+            System.out.println("WHERE Clause: " + whereClause);
+        } else {
+            System.out.println("No WHERE clause.");
+        }
+
+        // Gestion des colonnes à afficher
+        String[] colonnes = matcher.group(1).trim().equals("*")
+                ? relation.getAllColumnNames().toArray(new String[0]) // Récupérer tous les noms de colonnes
+                : matcher.group(1).split(",");
+
+        ArrayList<String> selectedColumns = new ArrayList<>();
+        for (String column : colonnes) {
+            selectedColumns.add(column.trim());
+        }
+
+        // Vérification de la clause WHERE
+        Condition condition = null;
+        if (whereClause != null) {
+            try {
+                condition = new Condition(whereClause); // Utilise la nouvelle classe Condition pour gérer les clauses complexes
+            } catch (IllegalArgumentException e) {
+                System.out.println("Erreur dans la clause WHERE : " + e.getMessage());
+                return;
+            }
+        }
+
+        // Itération sur les tuples
+        int totalRecords = 0;
+        for (Record record : relation.getAllRecords()) {
+            // Évaluer la condition (inclut les "AND" si présents)
+            if (condition == null || condition.evaluate(record)) {
+                totalRecords++;
+                StringBuilder output = new StringBuilder();
+                for (String col : selectedColumns) {
+                    try {
+                        output.append(record.getValeurByNomCol(col)).append(" ; "); // Récupérer la valeur de chaque colonne
+                    } catch (Exception e) {
+                        System.out.println("Erreur dans la récupération de la colonne : " + col);
+                        return;
+                    }
+                }
+                if (output.length() > 3) {
+                    output.setLength(output.length() - 3); // Enlever le dernier " ; "
+                }
+                output.append(".");
+                System.out.println(output.toString());
+            }
+        }
+        System.out.println("Total records = " + totalRecords);
     }
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
    /* public void processSelectCommand(String command) {
         // Exemple de commande : SELECT aliasRel.colp1, aliasRel.colp2 FROM nomRelation aliasRel [WHERE C1 AND C2 ...]
