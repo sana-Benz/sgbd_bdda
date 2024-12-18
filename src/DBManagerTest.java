@@ -22,7 +22,7 @@ public class DBManagerTest {
      // Créer une autre base
      manager.CreateDatabase("DeuxiemeBase");
      //manager.RemoveDatabase("NouvelleBase");
-     manager.ListTablesInCurrentDatabase();
+     //manager.ListTablesInCurrentDatabase();
 		// Charger l'état au démarrage
 		/*manager.loadState();
 	

@@ -1,62 +1,64 @@
-import java.util.ArrayList;
+
 import java.nio.ByteBuffer;
-import java.io.IOException;
-
-
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class TestRelation {
-	public static void main(String [] args) throws IOException {
-		
-		// Initialisation de la configuration et du DiskManager
-		DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
-		DiskManager diskManager = new DiskManager(config);
-		// Initialisation du BufferManager avec la politique LRU par défaut
-        BufferManager bufferManager = new BufferManager(config, diskManager);
-        // allocation de la page depuis le disk  
-        PageId headerPageId = diskManager.AllocPage();   
-        System.out.println("Page allouée : Fichier " + headerPageId.getFileIdx() + ", Page " + headerPageId.getPageIdx());
+	public static void main(String[] args) {
+		try {
+			System.out.println(" Étape 1 : Initialisation des composants");
+			DBConfig config = new DBConfig("../DB", 8192, 24576, 100, "LRU");
+			DiskManager diskManager = new DiskManager(config);
+			BufferManager bufferManager = new BufferManager(config, diskManager);
 
-		ArrayList<ColInfo> tableCols = new ArrayList<>();
-		tableCols.add(new ColInfo("Colonne1", ColmType.INT, 0));
-		tableCols.add(new ColInfo("Colonne2", ColmType.FLOAT, 0));
-		tableCols.add(new ColInfo("Colonne3", ColmType.CHAR, 15));
-		tableCols.add(new ColInfo("Colonne4", ColmType.VARCHAR, 25));
-		
-		Relation relation = new Relation(config, "table1", 4, tableCols, headerPageId, diskManager, bufferManager);
-		
-		System.out.println("Nom de la table : " + relation.getNomRelation());
-		System.out.println("Nombre de colonne : " + relation.getNbCol());
-		
-		ArrayList<ColInfo> colonnes = relation.getTableCols();
-		for(int i=0; i<relation.getNbCol(); i++) {
-			System.out.println("Nome de colonne : " + colonnes.get(i).getNameCol());
-	        System.out.println("Type de colonne : " + colonnes.get(i).getTypeCol());
-	        System.out.println("Taille de colonne : " + colonnes.get(i).getLengthChar());
-	        
+			System.out.println("Étape 2 : Définition du schéma de la relation");
+			ArrayList<ColInfo> tableCols = new ArrayList<>();
+			tableCols.add(new ColInfo("ID", ColmType.INT, 0));
+			tableCols.add(new ColInfo("Name", ColmType.VARCHAR, 20));
+
+			System.out.println("Étape 3 : Création de la relation");
+			Relation relation = new Relation("SimpleRelation", 2, tableCols, config, diskManager, bufferManager);
+			System.out.println("Relation créée avec succès : " + relation);
+
+			System.out.println("Étape 4 : Ajout d'une page de données");
+			relation.addDataPage();
+			System.out.println("Une page de données a été ajoutée avec succès.");
+
+			System.out.println("Étape 5 : Récupération de la première page de données");
+			ArrayList<PageId> dataPages = relation.getDataPages();
+			if (dataPages.isEmpty()) {
+				System.err.println("Erreur : aucune page de données trouvée.");
+				return;
+			}
+			PageId firstDataPage = dataPages.get(0);
+
+			System.out.println("voici l'id de la headerPAGE "+ relation.getHeaderPageId() + " id de la premiere page de donnees "+ firstDataPage);
+
+			System.out.println("Étape 6 : Création d'un enregistrement");
+			Record record = new Record(relation, null);
+			ArrayList<String> recordValues = new ArrayList<>(Arrays.asList("1", "Alice"));
+			record.setValeursRec(recordValues);
+
+			System.out.println("Étape 7 : Écriture de l'enregistrement dans la page de données");
+			System.out.println("voici l'id de la datapage" + firstDataPage);
+			System.out.println("voici le record qu'on va ecrire "+ record);
+			RecordId recordId = relation.writeRecordToDataPage(record, firstDataPage);
+
+			if (recordId != null) {
+				System.out.println("Enregistrement inséré avec RecordId : " + recordId);
+			} else {
+				System.err.println("Échec de l'insertion de l'enregistrement.");
+			}
+
+			System.out.println("Étape 8 : Lecture de tous les enregistrements");
+			System.out.println("\nEnregistrements dans la relation :");
+			ArrayList<Record> allRecords = relation.getRecordsInDataPage(firstDataPage);
+			for (Record rec : allRecords) {
+				System.out.println("Enregistrement : " + rec.getValeursRec());
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		
-		int slotIndex = 0;
-		RecordId recordId = new RecordId(headerPageId, slotIndex);
-		Record record = new Record(relation, recordId);
-		 System.out.println("Record inséré avec RecordId : " + recordId.toString());
-		
-		 ArrayList<String> valeursRec = new ArrayList<>();
-			valeursRec.add("2457");
-			valeursRec.add("15.75");
-			valeursRec.add("LionelMessi");
-			valeursRec.add("ProjetBDDAL3");
-			record.setValeursRec(valeursRec);
-			
-			
-		 ByteBuffer buffer = ByteBuffer.allocate(100);
-		int bytesEcrite = relation.writeToBuffer(record, buffer, 0);
-		System.out.println("Bytes ecrite : " + bytesEcrite);
-		
-		int byteslus = relation.readFromBuffer(record, buffer, 0);
-		System.out.println("Bytes lus : " + byteslus);
-		ArrayList<Record> listesRecord = relation.getAllRecords();
-		System.out.println(listesRecord);
-		
 	}
-
 }

@@ -36,5 +36,40 @@ public class Record {
 			throw new IndexOutOfBoundsException("Indice Invalide");
 		return valeursRec.get(indexCol);
 	}
+	
+	public String getValeurByNomCol(String nomCol) {
+	    int indexCol = relation.getColIndex(nomCol);
+	    if (indexCol == -1) {
+	        throw new IllegalArgumentException("Nom de colonne invalide : " + nomCol);
+	    }
+	    return valeurRec(indexCol);
+	}
+
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Record [");
+
+		// Ajouter l'ID du record s'il existe
+		if (recordId != null) {
+			sb.append("Record ID: ").append(recordId).append(", ");
+		}
+
+		// Ajouter les valeurs des colonnes
+		sb.append("Valeurs: ");
+		for (int i = 0; i < valeursRec.size(); i++) {
+			sb.append(valeursRec.get(i));
+			if (i < valeursRec.size() - 1) {
+				sb.append(", ");
+			}
+		}
+
+		sb.append("]");
+		return sb.toString();
+	}
+
+
+
 
 }
