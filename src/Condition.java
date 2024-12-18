@@ -1,100 +1,106 @@
-/*public class Condition {
-    private String columnName;
-    private String operator;
-    private String value;
-
-    public Condition(String whereClause) {
-        String[] parts = whereClause.split("\\s*([=<>]+)\\s*");
-        if (parts.length != 2) {
-            throw new IllegalArgumentException("Clause WHERE invalide : " + whereClause);
-        }
-        this.columnName = parts[0].trim();
-        this.operator = whereClause.replaceAll(".*?(<=|>=|<>|[=<>]).*", "$1");
-        this.value = parts[1].trim();
-    }
-
-    public boolean evaluate(Record record) {
-        String recordValue = record.getValeurByNomCol(columnName).toString();
-        switch (operator) {
-            case "=":
-                return recordValue.equals(value);
-            case ">":
-                return Double.parseDouble(recordValue) > Double.parseDouble(value);
-            case "<":
-                return Double.parseDouble(recordValue) < Double.parseDouble(value);
-            case ">=":
-                return Double.parseDouble(recordValue) >= Double.parseDouble(value);
-            case "<=":
-                return Double.parseDouble(recordValue) <= Double.parseDouble(value);
-            case "<>":
-                return !recordValue.equals(value);
-            default:
-                throw new IllegalArgumentException("Opérateur non supporté : " + operator);
-        }
-    }
-}*/
-
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class Condition {
-    private List<Condition> subConditions; // Liste des sous-conditions
+    private List<Condition> subConditions; // Liste des sous-conditions pour AND
     private String columnName;
     private String operator;
     private String value;
 
-    // Constructeur pour les conditions simples
-    public Condition(String whereClause) {
+    // Constructeur pour les conditions complexes et simples
+    public Condition(String whereClause, String alias) {
         this.subConditions = new ArrayList<>();
         if (whereClause.contains(" AND ")) {
-            // Découper la clause WHERE en conditions séparées par AND
+            // Découper la clause WHERE en sous-conditions avec "AND"
             String[] conditions = whereClause.split("\\s+AND\\s+");
             for (String condition : conditions) {
-                this.subConditions.add(new Condition(condition.trim())); // Ajouter chaque sous-condition
+                this.subConditions.add(new Condition(condition.trim(), alias));
             }
         } else {
-            // Condition simple (pas de "AND")
+            // Condition simple
             String[] parts = whereClause.split("\\s*(<=|>=|<>|[=<>])\\s*");
             if (parts.length != 2) {
                 throw new IllegalArgumentException("Clause WHERE invalide : " + whereClause);
             }
             this.columnName = parts[0].trim();
+            if (alias != null && this.columnName.contains(".")) {
+                this.columnName = this.columnName.split("\\.")[1]; // Retirer l'alias
+            }
             this.operator = whereClause.replaceAll(".*?(<=|>=|<>|[=<>]).*", "$1");
             this.value = parts[1].trim();
         }
     }
 
-    // Évaluation de la condition
+    // Méthode d'évaluation principale
     public boolean evaluate(Record record) {
         if (!subConditions.isEmpty()) {
-            // Évaluer toutes les sous-conditions avec "AND"
+            // Évaluer chaque sous-condition avec "AND"
             for (Condition subCondition : subConditions) {
                 if (!subCondition.evaluate(record)) {
-                    return false; // Une sous-condition échoue -> résultat global = false
+                    return false; // Une condition échoue -> résultat global = false
                 }
             }
             return true; // Toutes les sous-conditions sont vraies
         }
 
         // Évaluation d'une condition simple
-        String recordValue = record.getValeurByNomCol(columnName).toString();
-        switch (operator) {
-            case "=":
-                return recordValue.equals(value);
-            case ">":
-                return Double.parseDouble(recordValue) > Double.parseDouble(value);
-            case "<":
-                return Double.parseDouble(recordValue) < Double.parseDouble(value);
-            case ">=":
-                return Double.parseDouble(recordValue) >= Double.parseDouble(value);
-            case "<=":
-                return Double.parseDouble(recordValue) <= Double.parseDouble(value);
-            case "<>":
-                return !recordValue.equals(value);
-            default:
-                throw new IllegalArgumentException("Opérateur non supporté : " + operator);
+        try {
+            String recordValue = record.getValeurByNomCol(columnName).toString();
+            System.out.println("Comparaison : recordValue = '" + recordValue + "' | valeur cherchée = '" + value + "'");
+
+            switch (operator) {
+                case "=":
+                    return compareValues(recordValue, value);
+                case "<":
+                    return compareValuesForOrder(recordValue, value) < 0;
+                case ">":
+                    return compareValuesForOrder(recordValue, value) > 0;
+                case "<=":
+                    return compareValuesForOrder(recordValue, value) <= 0;
+                case ">=":
+                    return compareValuesForOrder(recordValue, value) >= 0;
+                case "<>":
+                    return !compareValues(recordValue, value);
+                default:
+                    throw new IllegalArgumentException("Opérateur non supporté : " + operator);
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Erreur de format des nombres : " + e.getMessage());
+            return false;
+        } catch (Exception e) {
+            System.out.println("Erreur d'évaluation de la condition : " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Comparaison des valeurs pour "=" et "<>"
+    private boolean compareValues(String recordValue, String searchValue) {
+        try {
+            if (searchValue.startsWith("\"") && searchValue.endsWith("\"")) {
+                String cleanedSearchValue = searchValue.substring(1, searchValue.length() - 1);
+                return recordValue.equals(cleanedSearchValue);
+            } else {
+                double recordNumber = Double.parseDouble(recordValue);
+                double searchNumber = Double.parseDouble(searchValue);
+                return recordNumber == searchNumber;
+            }
+        } catch (NumberFormatException e) {
+            return recordValue.equals(searchValue); // Comparaison en tant que chaîne
+        }
+    }
+
+    // Comparaison des valeurs pour les opérateurs "<", ">", "<=", ">="
+    private int compareValuesForOrder(String recordValue, String searchValue) {
+        if (searchValue.startsWith("\"") && searchValue.endsWith("\"")) {
+            String cleanedSearchValue = searchValue.substring(1, searchValue.length() - 1);
+            return recordValue.compareTo(cleanedSearchValue);
+        }
+        try {
+            double recordNumber = Double.parseDouble(recordValue);
+            double searchNumber = Double.parseDouble(searchValue);
+            return Double.compare(recordNumber, searchNumber);
+        } catch (NumberFormatException e) {
+            return recordValue.compareTo(searchValue); // Comparaison en tant que chaîne
         }
     }
 }
-

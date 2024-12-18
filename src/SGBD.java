@@ -335,27 +335,26 @@ public class SGBD {
             while ((values = csvReader.readNext()) != null) {
                 lineNumber++;
 
-                // Vérification du nombre de colonnes
-                if (values.length != nbColonnes) {
+                // Vérifiez si le nombre de colonnes correspond
+                if (values.length != relation.getNbCol()) {
+                    System.out.println("Erreur à la ligne " + lineNumber + " : Nombre de colonnes incorrect.");
                     errorCount++;
-                    System.out.println("Le nombre de valeurs ne correspond pas au nombre de colonnes pour la ligne " + lineNumber + " : " + String.join(",", values));
+                    continue;
+                }
 
-                    if (errorCount >= maxErrors) {
-                        System.out.println("Nombre d'erreurs maximum atteint. Arrêt de l'insertion.");
-                        break;
+                // Insérez chaque enregistrement
+                try {
+                    Record record = new Record(relation, relation.allocateNextRecordId());
+                    ArrayList<String> valeursRec = new ArrayList<>();
+                    for (String value : values) {
+                        valeursRec.add(value.trim().replace("\"", ""));
                     }
-
-                    continue; // Passer à la ligne suivante
+                    record.setValeursRec(valeursRec);
+                    relation.addRecord(record); // Ajoute le record à la relation
+                } catch (Exception e) {
+                    System.out.println("Erreur lors de l'insertion de la ligne " + lineNumber + ": " + e.getMessage());
+                    errorCount++;
                 }
-
-                // Créer un nouvel enregistrement
-                Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), lineNumber));
-                ArrayList<String> valeursRec = new ArrayList<>();
-                for (String value : values) {
-                    valeursRec.add(value.trim().replace("\"", "")); // Enlever les guillemets
-                }
-                record.setValeursRec(valeursRec);
-                relation.addRecord(record);
             }
 
             System.out.println("Insertion en bloc terminée avec succès !");
@@ -366,275 +365,155 @@ public class SGBD {
         }
     }
 
+   
+  
+  public void processSelectCommand(String command) {
+    // Définir un modèle pour analyser la commande SELECT
+    String regex = "^SELECT\\s+(.+?)\\s+FROM\\s+(\\w+)(?:\\s+(\\w+))?(?:\\s+WHERE\\s+(.+))?$";
+    Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+    Matcher matcher = pattern.matcher(command.trim());
 
-    
-   /* public void processSelectCommand(String command) {   //SELECT * FROM tab1 WHERE c1 = 1.5
-        String sqlSelectPattern =
-                "^\\s*SELECT\\s+" +     // SELECT keyword
-                        "([\\w*,\\s]+)\\s+" +   // Columns (wildcard, names, comma-separated)
-                        "FROM\\s+" +             // FROM keyword
-                        "(\\w+)\\s*" +           // Table name
-                        "(?:WHERE\\s+(.+))?$";   // Optional WHERE clause
-
-        // Compile the regex with case-insensitive flag
-        Pattern pattern = Pattern.compile(sqlSelectPattern, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(command.trim()); // Trim the query
-
-        // Check for a match
-        boolean valid = matcher.matches();
-        if (!valid) {
-            System.out.println("Commande invalide.");
-            return;
-        }
-
-        // WHERE clause is optional
-        String whereClause = null;
-        if (matcher.groupCount() > 2 && matcher.group(3) != null) {
-            whereClause = matcher.group(3).trim();
-            System.out.println("WHERE Clause: " + whereClause);
-        } else {
-            System.out.println("No WHERE clause");
-        }
-
-        String relationName = matcher.group(2); // Get table name
-        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
-        if (relation == null) {
-            System.out.println("La relation " + relationName + " n'existe pas.");
-            return;
-        }*/
-
-        // Traitement des colonnes à afficher
-       /* String[] columns = matcher.group(1).split(",");
-        ArrayList<String> selectedColumns = new ArrayList<>();
-        for (String column : columns) {
-            selectedColumns.add(column.trim());
-        }*/
-        
-   /*  // Gestion des colonnes à afficher
-        String[] colonnes = matcher.group(1).trim().equals("*")
-                ? relation.getAllColumnNames().toArray(new String[0]) // Récupérer tous les noms de colonnes
-                : matcher.group(1).split(",");
-
-        ArrayList<String> selectedColumns = new ArrayList<>();
-        for (String column : colonnes) {
-            selectedColumns.add(column.trim());
-        }
-
-        // Vérification de la clause WHERE
-        Condition condition = null;
-        if (whereClause != null) {
-            try {
-                condition = new Condition(whereClause); // Implémentez une classe robuste pour gérer les conditions
-            } catch (IllegalArgumentException e) {
-                System.out.println("Erreur dans la clause WHERE : " + e.getMessage());
-                return;
-            }
-        }
-
-        // Itération sur les tuples
-        int totalRecords = 0;
-        for (Record record : relation.getAllRecords()) {
-            if (condition == null || condition.evaluate(record)) {
-                totalRecords++;
-                StringBuilder output = new StringBuilder();
-                for (String col : selectedColumns) {
-                    try {
-                        output.append(record.getValeurByNomCol(col)).append(" ; "); // Assurez-vous que getValeurByNomCol fonctionne
-                    } catch (Exception e) {
-                        System.out.println("Erreur dans la récupération de la colonne : " + col);
-                        return;
-                    }
-                }
-                if (output.length() > 3) {
-                    output.setLength(output.length() - 3); // Enlever le dernier " ; "
-                }
-                output.append(".");
-                System.out.println(output.toString());
-            }
-        }
-        System.out.println("Total records = " + totalRecords);
-    }*/
-
-    
-    
-    //testtt select avec AND
-    
-    public void processSelectCommand(String command) {
-        // Définir un modèle pour analyser la commande SELECT
-        String sqlSelectPattern =
-                "^\\s*SELECT\\s+" +           // Mot-clé SELECT
-                "([\\w*,\\s]+)\\s+" +         // Colonnes (wildcard ou noms séparés par des virgules)
-                "FROM\\s+" +                  // Mot-clé FROM
-                "(\\w+)\\s*" +                // Nom de la table
-                "(?:WHERE\\s+(.+))?$";        // Clause WHERE optionnelle
-
-        // Compiler l'expression régulière avec insensibilité à la casse
-        Pattern pattern = Pattern.compile(sqlSelectPattern, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(command.trim()); // Nettoyer et appliquer le modèle
-
-        // Vérifier si la commande correspond au modèle
-        boolean valid = matcher.matches();
-        if (!valid) {
-            System.out.println("Commande invalide.");
-            return;
-        }
-
-        // Extraire les parties de la commande
-        String relationName = matcher.group(2); // Nom de la table
-        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
-        if (relation == null) {
-            System.out.println("La relation " + relationName + " n'existe pas.");
-            return;
-        }
-
-        // Récupérer la clause WHERE (si elle existe)
-        String whereClause = null;
-        if (matcher.groupCount() > 2 && matcher.group(3) != null) {
-            whereClause = matcher.group(3).trim();
-            System.out.println("WHERE Clause: " + whereClause);
-        } else {
-            System.out.println("No WHERE clause.");
-        }
-
-        // Gestion des colonnes à afficher
-        String[] colonnes = matcher.group(1).trim().equals("*")
-                ? relation.getAllColumnNames().toArray(new String[0]) // Récupérer tous les noms de colonnes
-                : matcher.group(1).split(",");
-
-        ArrayList<String> selectedColumns = new ArrayList<>();
-        for (String column : colonnes) {
-            selectedColumns.add(column.trim());
-        }
-
-        // Vérification de la clause WHERE
-        Condition condition = null;
-        if (whereClause != null) {
-            try {
-                condition = new Condition(whereClause); // Utilise la nouvelle classe Condition pour gérer les clauses complexes
-            } catch (IllegalArgumentException e) {
-                System.out.println("Erreur dans la clause WHERE : " + e.getMessage());
-                return;
-            }
-        }
-
-        // Itération sur les tuples
-        int totalRecords = 0;
-        for (Record record : relation.getAllRecords()) {
-            // Évaluer la condition (inclut les "AND" si présents)
-            if (condition == null || condition.evaluate(record)) {
-                totalRecords++;
-                StringBuilder output = new StringBuilder();
-                for (String col : selectedColumns) {
-                    try {
-                        output.append(record.getValeurByNomCol(col)).append(" ; "); // Récupérer la valeur de chaque colonne
-                    } catch (Exception e) {
-                        System.out.println("Erreur dans la récupération de la colonne : " + col);
-                        return;
-                    }
-                }
-                if (output.length() > 3) {
-                    output.setLength(output.length() - 3); // Enlever le dernier " ; "
-                }
-                output.append(".");
-                System.out.println(output.toString());
-            }
-        }
-        System.out.println("Total records = " + totalRecords);
+    // Vérifier si la commande correspond au modèle
+    if (!matcher.matches()) {
+        System.out.println("Commande SELECT invalide.");
+        return;
     }
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-   /* public void processSelectCommand(String command) {
-        // Exemple de commande : SELECT aliasRel.colp1, aliasRel.colp2 FROM nomRelation aliasRel [WHERE C1 AND C2 ...]
-        String[] parts = command.split(" ");
-        if (parts.length < 4 || !parts[0].equals("SELECT") || !parts[2].equals("FROM")) {
-            System.out.println("Commande invalide.");
-            return;
-        }
+    // Extraire les parties de la commande
+    String columnsPart = matcher.group(1);   // Colonnes à afficher
+    String relationName = matcher.group(2);  // Nom de la table
+    String alias = matcher.group(3);         // Alias de la table (peut être null)
+    String whereClause = matcher.group(4);   // Clause WHERE (facultatif)
 
-        String relationName = parts[3];
-        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
-        if (relation == null) {
-            System.out.println("La relation " + relationName + " n'existe pas.");
-            return;
-        }
+    // Vérifier si la relation existe
+    Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
+    if (relation == null) {
+        System.out.println("La relation " + relationName + " n'existe pas.");
+        return;
+    }
 
-        // Traitement des colonnes à afficher
-        String[] columns = parts[1].split(",");
-        ArrayList<String> selectedColumns = new ArrayList<>();
-        for (String column : columns) {
-            selectedColumns.add(column.trim());
-        }
+    // Si aucun alias n'est fourni, utilisez le nom de la table comme alias par défaut
+    if (alias == null) {
+        alias = relationName;
+    }
 
-        // Vérification de la clause WHERE
-        String whereClause = command.contains("WHERE") ? command.substring(command.indexOf("WHERE") + 6) : "";
-        Condition condition = null;
-        if (!whereClause.isEmpty()) {
-            condition = new Condition(whereClause.trim()); // Implémentez la classe Condition pour gérer les conditions
-        }
+    // Déterminer les colonnes à afficher
+    List<String> selectedColumns = new ArrayList<>();
+    if (columnsPart.equals("*")) {
+        selectedColumns = relation.getAllColumnNames();
+    } else {
+        String[] columns = columnsPart.split(",");
+        for (String col : columns) {
+            if (col.contains(".")) {
+                String colAlias = col.split("\\.")[0].trim(); // Alias dans la colonne
+                String colName = col.split("\\.")[1].trim(); // Nom de la colonne
 
-        // Itération sur les tuples
-        int totalRecords = 0;
-        for (Record record : relation.getAllRecords()) {
-            if (condition == null || condition.evaluate(record)) {
-                totalRecords++;
-                StringBuilder output = new StringBuilder();
-                for (String col : selectedColumns) {
-                    output.append(record.getValeurByNomCol(col)).append(" ; "); // Assurez-vous que getValue() fonctionne
+                // Vérifier si l'alias dans la colonne correspond à celui attendu
+                if (!colAlias.equals(alias)) {
+                    System.out.println("Alias inattendu pour la colonne : " + col);
+                    return;
                 }
-                output.setLength(output.length() - 3); // Enlever le dernier " ; "
-                output.append(".");
-                System.out.println(output.toString());
+                selectedColumns.add(colName);
+            } else {
+                // Ajouter directement si aucune partie d'alias n'est donnée
+                selectedColumns.add(col.trim());
             }
         }
-        System.out.println("Total records = " + totalRecords);
-    }*/
+    }
+
+    // Vérification de la clause WHERE
+    Condition condition = null;
+    if (whereClause != null) {
+        try {
+            condition = new Condition(whereClause, alias, relation); // Utilise la classe Condition pour gérer les clauses complexes
+            System.out.println("WHERE Clause: " + whereClause);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Erreur dans la clause WHERE : " + e.getMessage());
+            return;
+        }
+    } else {
+        System.out.println("No WHERE clause.");
+    }
+
+    // Itération sur les tuples et affichage des résultats
+    int totalRecords = 0;
+    for (Record record : relation.getAllRecords()) {
+        // Évaluer la condition (inclut les "AND" si présents)
+        if (condition == null || condition.evaluate(record)) {
+            totalRecords++;
+            StringBuilder output = new StringBuilder();
+            for (String col : selectedColumns) {
+                try {
+                    output.append(record.getValeurByNomCol(col)).append(" ; "); // Récupérer la valeur de chaque colonne
+                } catch (Exception e) {
+                    System.out.println("Erreur dans la récupération de la colonne : " + col);
+                    return;
+                }
+            }
+            if (output.length() > 3) {
+                output.setLength(output.length() - 3); // Enlever le dernier " ; "
+            }
+            output.append(".");
+            System.out.println(output);
+        }
+    }
+    System.out.println("Total records = " + totalRecords);
+}
+
+
+
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+   
     
  // Méthode Run
     public void Run() throws Exception {
