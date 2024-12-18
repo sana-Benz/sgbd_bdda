@@ -369,6 +369,7 @@ public class SGBD {
 
     
     public void processSelectCommand(String command) {   //SELECT * FROM tab1 WHERE c1 = 1.5
+
         String sqlSelectPattern =
                 "^\\s*SELECT\\s+" +     // SELECT keyword
                         "([\\w*,\\s]+)\\s+" +   // Columns (wildcard, names, comma-separated)
@@ -418,6 +419,7 @@ public class SGBD {
         ArrayList<String> selectedColumns = new ArrayList<>();
         for (String column : colonnes) {
             selectedColumns.add(column.trim());
+
         }
 
         // Vérification de la clause WHERE

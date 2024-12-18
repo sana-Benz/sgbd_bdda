@@ -11,6 +11,7 @@ public class Condition {
         this.columnName = parts[0].trim();
         this.operator = whereClause.replaceAll(".*?([=<>]+).*", "$1");
         this.value = parts[1].trim();
+
     }
 
     public boolean evaluate(Record record) {
