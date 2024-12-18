@@ -1,31 +1,53 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public class Condition {
+    private List<Condition> subConditions; // Liste des sous-conditions pour AND
     private String columnName;
     private String operator;
     private String value;
-    private Relation relation;
 
-    public Condition(String conditionString, String alias, Relation relation) {
-        this.relation = relation;
-
-        String[] parts = conditionString.split("AND");
-        for (String part : parts) {
-            part = part.trim();
-            if (part.contains("=") || part.contains(">") || part.contains("<")) {
-                String[] elements = part.split("(?<=[=><])|(?=[=><])"); // Split par opérateur
-                this.columnName = elements[0].trim().split("\\.")[1]; // Retirer l'alias
-                this.operator = elements[1].trim();
-                this.value = elements[2].trim();
+    // Constructeur pour les conditions complexes et simples
+    public Condition(String whereClause, String alias) {
+        this.subConditions = new ArrayList<>();
+        if (whereClause.contains(" AND ")) {
+            // Découper la clause WHERE en sous-conditions avec "AND"
+            String[] conditions = whereClause.split("\\s+AND\\s+");
+            for (String condition : conditions) {
+                this.subConditions.add(new Condition(condition.trim(), alias));
             }
+        } else {
+            // Condition simple
+            String[] parts = whereClause.split("\\s*(<=|>=|<>|[=<>])\\s*");
+            if (parts.length != 2) {
+                throw new IllegalArgumentException("Clause WHERE invalide : " + whereClause);
+            }
+            this.columnName = parts[0].trim();
+            if (alias != null && this.columnName.contains(".")) {
+                this.columnName = this.columnName.split("\\.")[1]; // Retirer l'alias
+            }
+            this.operator = whereClause.replaceAll(".*?(<=|>=|<>|[=<>]).*", "$1");
+            this.value = parts[1].trim();
         }
     }
 
+    // Méthode d'évaluation principale
     public boolean evaluate(Record record) {
+        if (!subConditions.isEmpty()) {
+            // Évaluer chaque sous-condition avec "AND"
+            for (Condition subCondition : subConditions) {
+                if (!subCondition.evaluate(record)) {
+                    return false; // Une condition échoue -> résultat global = false
+                }
+            }
+            return true; // Toutes les sous-conditions sont vraies
+        }
+
+        // Évaluation d'une condition simple
         try {
-            // Récupérer la valeur du record pour la colonne concernée
-            String recordValue = record.getValeurByNomCol(columnName);
+            String recordValue = record.getValeurByNomCol(columnName).toString();
             System.out.println("Comparaison : recordValue = '" + recordValue + "' | valeur cherchée = '" + value + "'");
 
-            // Évaluer la condition en fonction de l'opérateur
             switch (operator) {
                 case "=":
                     return compareValues(recordValue, value);
@@ -40,7 +62,7 @@ public class Condition {
                 case "<>":
                     return !compareValues(recordValue, value);
                 default:
-                    throw new IllegalArgumentException("Unsupported operator: " + operator);
+                    throw new IllegalArgumentException("Opérateur non supporté : " + operator);
             }
         } catch (NumberFormatException e) {
             System.out.println("Erreur de format des nombres : " + e.getMessage());
@@ -51,41 +73,34 @@ public class Condition {
         }
     }
 
-
+    // Comparaison des valeurs pour "=" et "<>"
     private boolean compareValues(String recordValue, String searchValue) {
         try {
-            // Remove quotes if the searchValue is a string
             if (searchValue.startsWith("\"") && searchValue.endsWith("\"")) {
                 String cleanedSearchValue = searchValue.substring(1, searchValue.length() - 1);
                 return recordValue.equals(cleanedSearchValue);
             } else {
-                // Compare as numbers if no quotes are present
                 double recordNumber = Double.parseDouble(recordValue);
                 double searchNumber = Double.parseDouble(searchValue);
                 return recordNumber == searchNumber;
             }
         } catch (NumberFormatException e) {
-            // Fallback to string comparison if number parsing fails
-            return recordValue.equals(searchValue);
+            return recordValue.equals(searchValue); // Comparaison en tant que chaîne
         }
     }
 
+    // Comparaison des valeurs pour les opérateurs "<", ">", "<=", ">="
     private int compareValuesForOrder(String recordValue, String searchValue) {
-        // Remove quotes if the searchValue is a string
         if (searchValue.startsWith("\"") && searchValue.endsWith("\"")) {
             String cleanedSearchValue = searchValue.substring(1, searchValue.length() - 1);
             return recordValue.compareTo(cleanedSearchValue);
         }
-        // Fallback to numeric comparison if applicable
         try {
             double recordNumber = Double.parseDouble(recordValue);
             double searchNumber = Double.parseDouble(searchValue);
             return Double.compare(recordNumber, searchNumber);
         } catch (NumberFormatException e) {
-            // Fallback to string comparison if numeric parsing fails
-            return recordValue.compareTo(searchValue);
+            return recordValue.compareTo(searchValue); // Comparaison en tant que chaîne
         }
     }
-
-
 }
