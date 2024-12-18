@@ -29,7 +29,7 @@ public class Record {
 	    int indexCol = relation.getColIndex(nomCol);
 	    if (indexCol == -1) {
 	        throw new IllegalArgumentException("Nom de colonne invalide : " + nomCol);
-	    }
+	    } 
 	    return valeurRec(indexCol);
 	}
 	  // Méthode addAttribut pour ajouter un attribut à l'enregistrement

@@ -15,7 +15,7 @@ public class DataPageHoldRecordIterator implements IRecordIterator {
         this.buffer = bufferManager.GetPage(pageId); // Charge la page en mémoire
         this.currentIndex = 0; // On commence au premier record
     }
-
+ 
     // Retourne le prochain record ou null s'il n'y en a plus
     @Override
     public Record GetNextRecord() {
@@ -33,7 +33,7 @@ public class DataPageHoldRecordIterator implements IRecordIterator {
     public void Reset() {
         currentIndex = 0;
     }
-
+ 
     // Ferme l'itérateur et libère le buffer
     @Override
     public void Close() {
