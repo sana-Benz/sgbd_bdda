@@ -365,74 +365,65 @@ public class SGBD {
         }
     }
 
+    public void processSelectCommand(String command) {
+        String regex = "^SELECT\\s+(.+?)\\s+FROM\\s+(\\w+)(?:\\s+(\\w+))?(?:\\s+WHERE\\s+(.+))?$";
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(command);
 
-    
-    public void processSelectCommand(String command) {   //SELECT * FROM tab1 WHERE c1 = 1.5
-
-        String sqlSelectPattern =
-                "^\\s*SELECT\\s+" +     // SELECT keyword
-                        "([\\w*,\\s]+)\\s+" +   // Columns (wildcard, names, comma-separated)
-                        "FROM\\s+" +             // FROM keyword
-                        "(\\w+)\\s*" +           // Table name
-                        "(?:WHERE\\s+(.+))?$";   // Optional WHERE clause
-
-        // Compile the regex with case-insensitive flag
-        Pattern pattern = Pattern.compile(sqlSelectPattern, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(command.trim()); // Trim the query
-
-        // Check for a match
-        boolean valid = matcher.matches();
-        if (!valid) {
-            System.out.println("Commande invalide.");
+        if (!matcher.matches()) {
+            System.out.println("Commande SELECT invalide.");
             return;
         }
 
-        // WHERE clause is optional
-        String whereClause = null;
-        if (matcher.groupCount() > 2 && matcher.group(3) != null) {
-            whereClause = matcher.group(3).trim();
-            System.out.println("WHERE Clause: " + whereClause);
-        } else {
-            System.out.println("No WHERE clause");
-        }
+        // Extraction des parties de la commande
+        String columnsPart = matcher.group(1);   // Colonnes à afficher
+        String relationName = matcher.group(2);  // Nom de la table
+        String alias = matcher.group(3);         // Alias de la table (peut être null)
+        String whereClause = matcher.group(4);   // Clause WHERE (facultatif)
 
-        String relationName = matcher.group(2); // Get table name
+        // Vérifiez si la relation existe
         Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
         if (relation == null) {
             System.out.println("La relation " + relationName + " n'existe pas.");
             return;
         }
 
-        // Traitement des colonnes à afficher
-       /* String[] columns = matcher.group(1).split(",");
-        ArrayList<String> selectedColumns = new ArrayList<>();
-        for (String column : columns) {
-            selectedColumns.add(column.trim());
-        }*/
-        
-     // Gestion des colonnes à afficher
-        String[] colonnes = matcher.group(1).trim().equals("*")
-                ? relation.getAllColumnNames().toArray(new String[0]) // Récupérer tous les noms de colonnes
-                : matcher.group(1).split(",");
-
-        ArrayList<String> selectedColumns = new ArrayList<>();
-        for (String column : colonnes) {
-            selectedColumns.add(column.trim());
-
+        // Si aucun alias n'est fourni, utilisez le nom de la table comme alias par défaut
+        if (alias == null) {
+            alias = relationName;
         }
 
-        // Vérification de la clause WHERE
-        Condition condition = null;
-        if (whereClause != null) {
-            try {
-                condition = new Condition(whereClause); // Implémentez une classe robuste pour gérer les conditions
-            } catch (IllegalArgumentException e) {
-                System.out.println("Erreur dans la clause WHERE : " + e.getMessage());
-                return;
+        // Déterminer les colonnes à afficher
+        List<String> selectedColumns = new ArrayList<>();
+        if (columnsPart.equals("*")) {
+            selectedColumns = relation.getAllColumnNames();
+        } else {
+            String[] columns = columnsPart.split(",");
+            for (String col : columns) {
+                if (col.contains(".")) {
+                    String colAlias = col.split("\\.")[0].trim(); // Alias dans la colonne
+                    String colName = col.split("\\.")[1].trim(); // Nom de la colonne
+
+                    // Vérifiez si l'alias dans la colonne correspond à celui attendu
+                    if (!colAlias.equals(alias)) {
+                        System.out.println("Alias inattendu pour la colonne : " + col);
+                        return;
+                    }
+                    selectedColumns.add(colName);
+                } else {
+                    // Ajouter directement si aucune partie d'alias n'est donnée
+                    selectedColumns.add(col.trim());
+                }
             }
         }
 
-        // Itération sur les tuples
+        // Gérer la condition WHERE
+        Condition condition = null;
+        if (whereClause != null) {
+            condition = new Condition(whereClause, alias, relation);
+        }
+
+        // Afficher les résultats
         int totalRecords = 0;
         for (Record record : relation.getAllRecords()) {
             if (condition == null || condition.evaluate(record)) {
@@ -440,21 +431,23 @@ public class SGBD {
                 StringBuilder output = new StringBuilder();
                 for (String col : selectedColumns) {
                     try {
-                        output.append(record.getValeurByNomCol(col)).append(" ; "); // Assurez-vous que getValeurByNomCol fonctionne
+                        output.append(record.getValeurByNomCol(col)).append(" ; ");
                     } catch (Exception e) {
-                        System.out.println("Erreur dans la récupération de la colonne : " + col);
+                        System.out.println("Erreur sur la colonne : " + col);
                         return;
                     }
                 }
-                if (output.length() > 3) {
-                    output.setLength(output.length() - 3); // Enlever le dernier " ; "
-                }
+                output.setLength(output.length() - 3); // Retirer le dernier " ; "
                 output.append(".");
-                System.out.println(output.toString());
+                System.out.println(output);
             }
         }
         System.out.println("Total records = " + totalRecords);
     }
+
+
+
+
 
     
    /* public void processSelectCommand(String command) {
