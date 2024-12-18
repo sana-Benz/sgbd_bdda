@@ -15,5 +15,3 @@ public class RecordPrinter {
         iterator.Close();  // Fermer l'itérateur après utilisation
     }
 }
-
-
