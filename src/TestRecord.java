@@ -4,7 +4,7 @@ import java.util.ArrayList;
 public class TestRecord {
 	public static void main( String[] args) throws Exception{
 		// Initialisation de la configuration et du DiskManager et du BufferManager
-		DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
+		DBConfig config = new DBConfig("./DB", 4096, 8192, 100, "LRU");
 		DiskManager diskManager = new DiskManager(config);
 		BufferManager bufferManager = new BufferManager(config, diskManager);
 

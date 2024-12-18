@@ -67,9 +67,8 @@ public class BufferManager {
 					"la page à écraser dans le bufferpool n'a pas été modifiée " + bufferToReplace.getPageId());
 			ByteBuffer newData = loadPageFromDisk(pageId);
 			bufferToReplace.setData(newData);// on met à jour les données du buffer
-			bufferToReplace.setDirty(false);
-			bufferToReplace.setPinCount(1);
-			//bufferToReplace.reset();// rénitialise le pin_count et le dirty flag
+			bufferToReplace.reset();// rénitialise le pin_count et le dirty flag
+
 			updateBufferOrder(bufferToReplace);
 
 			return bufferToReplace.getData();
@@ -194,12 +193,6 @@ public class BufferManager {
 		return null;
 	}
 
-	public void printBufferPool() {
-		System.out.println("Contenu du buffer pool :");
-		for(Buffer buffer : bufferPool) {
-			System.out.println("Page ID : " + buffer.getPageId() + ", Pin Count : " + buffer.getPinCount() + ", Dirty : " + buffer.getDirty());
-		}
-	}
 	public void bufferPoolState() {
 		for (Buffer buffer : bufferPool) {
 			System.out.println("Voici l'état du bufferPool");

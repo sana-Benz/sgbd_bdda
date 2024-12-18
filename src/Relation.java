@@ -84,7 +84,7 @@ public class Relation {
 	 //* @return int : la taille totale de l'enregistrement en octets, ou -1 en cas
 	 //*         d'erreur.
 
-	public int writeToBuffer(Record record, ByteBuffer buff, int pos) {
+	 public int writeToBuffer(Record record, ByteBuffer buff, int pos) {
 		try {
 			// Définir la position du buffer à la valeur spécifiée
 			buff.position(pos);
@@ -98,13 +98,19 @@ public class Relation {
 			for (int i = 0; i < getNbCol(); i++) {
 				String value = recValues.get(i); // Récupérer la valeur actuelle pour la colonne
 				ColInfo colInfo = tableCols.get(i);
-				System.out.println("Traitement de la colonne " + i + ": " + colInfo.toString() + " avec valeur : " + value);
+				System.out.println(
+						"Traitement de la colonne " + i + ": " + colInfo.toString() + " avec valeur : " + value);
+			System.out.println("Position avant écriture (writeToBuffer): " + buff.position());
 
 				// Switch basé sur le type de la colonne
 				switch (colInfo.getTypeCol()) {
 					case INT:
 						int intValue = Integer.parseInt(value);
+						System.out.println("Position avant écriture (writeToBuffer) : " + buff.position());
+
 						buff.putInt(intValue); // Écrire la valeur entière dans le buffer
+						System.out.println("Position après écriture (writeToBuffer): " + buff.position());
+
 						totalSize += 4; // Un INT occupe 4 octets
 						System.out.println("Écrit INT : " + intValue);
 						break;
@@ -113,8 +119,13 @@ public class Relation {
 						BigDecimal floatValue = new BigDecimal(value); // Convertir la valeur à BigDecimal
 						byte[] floatBytes = floatValue.toString().getBytes(); // Convertir BigDecimal en bytes (chaîne)
 						buff.putInt(floatBytes.length); // Écrire la longueur de la chaîne
+						System.out.println("Position avant écriture (writeToBuffer) : " + buff.position());
+
 						buff.put(floatBytes); // Écrire les bytes de la chaîne
-						totalSize += 4 + floatBytes.length; // Ajouter la longueur totale (4 octets pour la taille + contenu)
+						System.out.println("Position après écriture (writeToBuffer): " + buff.position());
+
+						totalSize += 4 + floatBytes.length; // Ajouter la longueur totale (4 octets pour la taille +
+															// contenu)
 						System.out.println("Écrit FLOAT (en BigDecimal) : " + floatValue);
 						break;
 
@@ -124,9 +135,18 @@ public class Relation {
 						byte[] charBytes = new byte[charLength]; // Créer un tableau de bytes de longueur fixe
 						byte[] charValueBytes = charValue.getBytes(); // Convertir la chaîne en tableau de bytes
 
-						// Copier les bytes de la chaîne dans le tableau de longueur fixe (troncature si nécessaire)
+						// Copier les bytes de la chaîne dans le tableau de longueur fixe (troncature si
+						// nécessaire)
 						System.arraycopy(charValueBytes, 0, charBytes, 0, Math.min(charValueBytes.length, charLength));
+						// Remplir le reste avec des espaces
+						for (int j = charValueBytes.length; j < charLength; j++) {
+							charBytes[j] = ' '; // Remplir avec des espaces
+						}
+						System.out.println("Position avant écriture (writeToBuffer) : " + buff.position());
+
 						buff.put(charBytes); // Écrire les bytes de longueur fixe dans le buffer
+						System.out.println("Position après écriture (writeToBuffer): " + buff.position());
+
 						totalSize += charLength; // Ajouter la longueur du champ CHAR à la taille totale
 						System.out.println("Écrit CHAR : " + charValue);
 						break;
@@ -135,8 +155,13 @@ public class Relation {
 						int varcharLength = value.length(); // Obtenir la longueur de la chaîne
 						buff.putInt(varcharLength); // Écrire d'abord la longueur de la chaîne (4 octets)
 						byte[] varcharBytes = value.getBytes(); // Convertir la chaîne en tableau de bytes
+						System.out.println("Position avant écriture (writeToBuffer) : " + buff.position());
+
 						buff.put(varcharBytes); // Écrire les bytes de la chaîne dans le buffer
-						totalSize += 4 + varcharLength; // Ajouter 4 octets pour la longueur et la longueur de la chaîne à la taille totale
+						System.out.println("Position après écriture (writeToBuffer): " + buff.position());
+
+						totalSize += 4 + varcharLength; // Ajouter 4 octets pour la longueur et la longueur de la chaîne
+														// à la taille totale
 						System.out.println("Écrit VARCHAR : " + value + " (longueur : " + varcharLength + ")");
 						break;
 
@@ -155,13 +180,17 @@ public class Relation {
 	}
 
 	/**
-	 *  Cette méthode rend comme résultat la taille totale (=le nombre d’octets) lus depuis le buffer.
-	 * Elle lit les valeurs du Record depuis le buffer à partir de pos, en supposant que le
+	 * Cette méthode rend comme résultat la taille totale (=le nombre d’octets) lus
+	 * depuis le buffer.
+	 * Elle lit les valeurs du Record depuis le buffer à partir de pos, en supposant
+	 * que le
 	 * Record a été écrit avec writeToBuffer.
-	 * @param record : dont la liste de valeurs est vide et sera remplie par cette méthode
+	 * 
+	 * @param record : dont la liste de valeurs est vide et sera remplie par cette
+	 *               méthode
 	 * @param buff
-	 * @param pos : un entier correspondant à une position dans le buffer
-	 * @return int  le nombre d’octets lus depuis le buffer
+	 * @param pos    : un entier correspondant à une position dans le buffer
+	 * @return int le nombre d’octets lus depuis le buffer
 	 */
 	public int readFromBuffer(Record record, ByteBuffer buff, int pos) {
 	    try {
@@ -260,42 +289,73 @@ public class Relation {
 
 			for (int i = 0; i < getNbCol(); i++) {
 				ColInfo colInfo = tableCols.get(i);
+				System.out.println("Position avant lecture (readFromBuffer): " + buff.position());
 
 				switch (colInfo.getTypeCol()) {
 					case INT:
-						int valeur_int = buff.getInt(); // lit 4 octs et les interpter comme un entier et avance la pos du
+					System.out.println("Position avant lecture (readFromBuffer) : " + buff.position());
+
+						int valeur_int = buff.getInt(); // lit 4 octs et les interpter comme un entier et avance la pos
+														// du
 						// tampon de 4 octs
+						System.out.println("Position après lecture (readFromBuffer): " + buff.position());
+
 						record.getValeursRec().add(Integer.toString(valeur_int));
 						totalSize += 4;
+						System.out.println("Lu INT: " + valeur_int + " (taille totale jusqu'à présent: " + totalSize + ")");
+
 						break;
 					case FLOAT:
 						int floatBytesLength = buff.getInt(); // Lire la longueur des bytes
 						byte[] floatBytes = new byte[floatBytesLength];
+						System.out.println("Position avant lecture (readFromBuffer) : " + buff.position());
+
 						buff.get(floatBytes); // Lire les bytes correspondant à la chaîne
+						System.out.println("Position après lecture (readFromBuffer): " + buff.position());
+
 						String floatString = new String(floatBytes); // Convertir les bytes en chaîne
 						BigDecimal valeur_float = new BigDecimal(floatString); // Convertir la chaîne en BigDecimal
 						record.getValeursRec().add(valeur_float.toString()); // Ajouter au record sous forme de chaîne
 						totalSize += 4 + floatBytesLength; // Longueur totale (taille + contenu)
 						System.out.println("Lu FLOAT (en BigDecimal) : " + valeur_float);
-						break;
+						System.out.println("Lu FLOAT: " + valeur_float + " (taille totale jusqu'à présent: " + totalSize + ")");
 
+						break;
 
 					case CHAR:
 						int charLength = colInfo.getLengthChar();
-						byte[] charBytes = new byte[charLength]; // Créer un tableau de bytes pour stocker les données lues
+						byte[] charBytes = new byte[charLength]; // Créer un tableau de bytes pour stocker les données
+																	// lues
 						// depuis le tampon
+						System.out.println("Position avant lecture (readFromBuffer) : " + buff.position());
+
 						buff.get(charBytes); // Lire les bytes correspondant à la longueur de la chaîne CHAR
+						System.out.println("Position après lecture (readFromBuffer): " + buff.position());
+
 						String valeur_char = new String(charBytes).trim(); // remove spaces or extra-padding
-						record.getValeursRec().add(valeur_char); // Ajouter la valeur lue (chaîne) dans la liste des valeurs
-						totalSize += charLength;
+						// Vérification de la taille lue par rapport à la taille attendue
+   						 if (valeur_char.length() != charLength) { 
+     					   System.err.println("Problème de taille CHAR : attendue " + charLength + " mais lue " + valeur_char.length());
+   						 }
+						record.getValeursRec().add(valeur_char); // Ajouter la valeur lue (chaîne) dans la liste des
+																	// valeurs
+						totalSize += charLength;	
+						System.out.println("Lu CHAR: " + valeur_char + " (taille totale jusqu'à présent: " + totalSize + ")");
+
 						break;
 					case VARCHAR:
 						int varCharLength = buff.getInt();
 						byte[] varCharBytes = new byte[varCharLength];
+						System.out.println("Position avant lecture (readFromBuffer) : " + buff.position());
+
 						buff.get(varCharBytes);
+						System.out.println("Position après lecture (readFromBuffer): " + buff.position());
+
 						String varCharValue = new String(varCharBytes);
 						record.getValeursRec().add(varCharValue);
-						totalSize += 4 + varCharLength;
+						totalSize += 4 + varCharLength;		
+						System.out.println("Lu VARCHAR: " + varCharValue + " (taille totale jusqu'à présent: " + totalSize + ")");
+
 						break;
 					default:
 						throw new IllegalArgumentException("le type de votre colonne invalide !!");
@@ -306,8 +366,11 @@ public class Relation {
 			System.err.println("Error in readFromBuffer: " + e.getMessage());
 			return -1; // Or another error value as needed
 		}
-  }
-  */
+	}
+
+	
+	
+  
   /**
 	 * Cette méthode écrit l’enregistrement record dans la page de données identifiée par pageId, et
 	 *  renvoie son RecordId.
@@ -462,12 +525,10 @@ public class Relation {
 			int pageSize = bufferPage.capacity(); // Taille totale de la page
 			int offsetM = pageSize - 4; // Offset de M
 			int M = bufferPage.getInt(offsetM);
-			int DebutSlotDirectory = offsetM - 4 - (M * 8); // Chaque slot a 8 octets (4 pour position, 4 pour taille)
+			int DebutSlotDirectory = offsetM -4 - (M * 8); // Chaque slot a 8 octets (4 pour position, 4 pour taille)
 
 			for (int slotIdx = 0; slotIdx < M; slotIdx++) {
-				//int slotOffset = DebutSlotDirectory + (slotIdx * 8); // Position du slot
-				int slotOffset = DebutSlotDirectory + (slotIdx * 8);
-				
+				int slotOffset = DebutSlotDirectory + (slotIdx * 8); // Position du slot
 				if (slotOffset < 0 || slotOffset + 4 > bufferPage.capacity()) {
 					throw new RuntimeException("Erreur de calcul de l'offset pour le slot directory.");
 				}
@@ -479,17 +540,8 @@ public class Relation {
 				if (recordSize > 0 && recordStart != -1) {
 					RecordId rid = new RecordId(pageId, slotIdx);
 					Record record = new Record(this, rid);
-					System.out.println("SlotIdx: " + slotIdx);
-					System.out.println("Record Start: " + recordStart + ", Record Size: " + recordSize);
-					System.out.println("DebutSlotDirectory: " + DebutSlotDirectory);
-					//System.out.println("Contenu du tampon avant lecture : " + Arrays.toString(bufferPage.array()));
-
 					int bytesRead = readFromBuffer(record, bufferPage, recordStart);
-					int tailleRecord = calculateRecordSize(record);
-					System.out.println("Position du tampon avant lecture/écriture : " + bufferPage.position());
-
-					System.out.println("Les bites lu " + bytesRead);
-					if (bytesRead != tailleRecord) {
+					if (bytesRead != recordSize) {
 						throw new IllegalStateException("Erreur : taille de record incohérente.");
 					}
 					listeRecords.add(record);

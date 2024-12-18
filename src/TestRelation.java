@@ -35,6 +35,7 @@ public class TestRelation {
 			System.out.println("voici l'id de la headerPAGE "+ relation.getHeaderPageId() + " id de la premiere page de donnees "+ firstDataPage);
 
 			System.out.println("Étape 6 : Création d'un enregistrement");
+		
 			Record record = new Record(relation, null);
 			ArrayList<String> recordValues = new ArrayList<>(Arrays.asList("1", "Alice"));
 			record.setValeursRec(recordValues);
