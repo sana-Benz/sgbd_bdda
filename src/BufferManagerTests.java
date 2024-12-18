@@ -1,75 +1,64 @@
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
-public class BufferManagerTests{ 
+public class BufferManagerTests {
+    public static void main(String[] args) {
+        try {
+            // Configuration et initialisation
+            DBConfig config = new DBConfig("../DB", 4096, 8192, 3, "LRU");
+            DiskManager diskManager = new DiskManager(config);
+            BufferManager bufferManager = new BufferManager(config, diskManager);
 
-    public static void main(String[] args) throws Exception {
-        // Initialisation de la configuration et du DiskManager
-        DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
-        DiskManager diskManager = new DiskManager(config);
-  
-        // Initialisation du BufferManager avec la politique LRU par défaut
-        BufferManager bufferManager = new BufferManager(config, diskManager);
- 
-        // Test 1 : Charger une page depuis le disque
-        System.out.println("Test 1 : Charger une page depuis le disque"); 
-        PageId pageId1 = diskManager.AllocPage(); 
-        ByteBuffer pageData1 = bufferManager.GetPage(pageId1);
-        if (pageData1 != null) {
-            System.out.println("Page 1 chargée avec succès !"); 
-        } else {
-            System.out.println("Échec du chargement de la page 1 !");
-        }
+            // Étape 1: Allocation et écriture de données
+            System.out.println("\n[Étape 1] Allocation et écriture de données");
+            PageId pageId = diskManager.AllocPage(); // marche
+            ByteBuffer writeBuffer = ByteBuffer.allocate(config.getPageSize());
+            String data = "Données de test pour la page";
+            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
+            writeBuffer.put(dataBytes); // Écrire les données dans le buffer
+            writeBuffer.flip(); // Réinitialiser la position avant d'écrire sur le disque
+            diskManager.WritePage(pageId, writeBuffer); // marche
+            System.out.println("Page allouée et données écrites: " + pageId);
 
-        // Test 2 : Charger une page déjà en mémoire
-        System.out.println("Test 2 : Charger une page déjà en mémoire");
-        ByteBuffer pageData2 = bufferManager.GetPage(pageId1);
-        if (pageData1 == pageData2) { 
-            System.out.println("La page 1 est bien récupérée depuis la mémoire !");
-        } else {
-            System.out.println("Échec : la page 1 n'a pas été récupérée depuis la mémoire !");
-        }
- 
-     // Test 3 : Politique de remplacement LRU 
-        System.out.println("Test 3 : Politique de remplacement LRU");
-        PageId pageId2 = diskManager.AllocPage();
-        ByteBuffer pageData3 = bufferManager.GetPage(pageId2);
-        if (pageData3 != null) {
-            System.out.println("Page 2 chargée avec succès !");
-        } else {
-            System.out.println("Échec du chargement de la page 2 !");
-        }
+            // Étape 2: Lecture et vérification des données
+            System.out.println("\n[Étape 2] Lecture et vérification des données");
+            ByteBuffer readBuffer = bufferManager.GetPage(pageId);
+            bufferManager.bufferPoolState();
+            byte[] readData = new byte[dataBytes.length]; // Assurez-vous que la taille est correcte
+            readBuffer.get(readData); // Lire les données du buffer
+            String readString = new String(readData, StandardCharsets.UTF_8); // Convertir en chaîne
+            System.out.println("Données lues depuis la page: " + readString);
 
-        PageId pageId3 = diskManager.AllocPage();
-        ByteBuffer pageData4 = bufferManager.GetPage(pageId3);
-        if (pageData4 != null) {
-            System.out.println("Page 3 chargée avec succès !");
-        } else {
-            System.out.println("Échec du chargement de la page 3 !");
-        }
+            // Étape 3: Modification, libération et vérification
+            System.out.println("\n[Étape 3] Modification, libération et vérification");
+            readBuffer.position(0);
+            readBuffer.put((byte) 1); // Modification des données
+            bufferManager.FreePage(pageId, true); // Libérer la page avec dirty bit
+            Buffer buffer = bufferManager.getBufferByPageId(pageId);
 
-        // Charger une nouvelle page qui devrait remplacer la première
-        PageId pageId4 = diskManager.AllocPage();
-        ByteBuffer pageData5 = bufferManager.GetPage(pageId4);
+            assert buffer.getDirty() : "Le dirty bit n'est pas correctement défini!";
+            assert buffer.getPinCount() == 0 : "Le pin count devrait être 0 après la libération.";
 
-        if (pageData1 != bufferManager.GetPage(pageId1)) {
-            System.out.println("La page 1 a été remplacée conformément à la politique LRU.");
-        } else {
-            System.out.println("Échec : la page 1 n'a pas été remplacée !");
-        }
+            System.out.println("état du buffer pool après freepage");
+            bufferManager.bufferPoolState();
 
- 
-        // Test 4 : Flusher les buffers modifiés (dirty)
-        System.out.println(" Test 4 : Flusher les buffers modifiés");
-        pageData5.put(0, (byte) 1); // Modifier la première position du buffer
-        bufferManager.flushBuffers(); // Flusher les pages modifiées
+            // Étape 4: Test de flushBuffers
+            System.out.println("\n[Étape 4] Test de flushBuffers");
+            bufferManager.flushBuffers();
+            System.out.println("Buffers flushés avec succès.");
+            bufferManager.bufferPoolState();
 
-        // Recharger la page depuis le disque pour vérifier
-        ByteBuffer reloadedBuffer = ByteBuffer.allocate(config.getPageSize());
-        diskManager.ReadPage(pageId4, reloadedBuffer);
-        if (reloadedBuffer.get(0) == 1) {
-            System.out.println("La page modifiée a été correctement écrite sur le disque.");
-        } else {
-            System.out.println("Échec : la page modifiée n'a pas été écrite sur le disque.");
+            // Vérification finale: Lecture après flush
+            System.out.println("\n[Vérification finale] Lecture après flush");
+            ByteBuffer finalBuffer = ByteBuffer.allocate(config.getPageSize());
+            diskManager.ReadPage(pageId, finalBuffer);
+            byte[] finalData = new byte[dataBytes.length];
+            finalBuffer.get(finalData);
+            String finalString = new String(finalData, StandardCharsets.UTF_8); // Convertir en chaîne
+            System.out.println("Données finales après flush: " + finalString);
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

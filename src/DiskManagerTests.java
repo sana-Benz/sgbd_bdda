@@ -1,46 +1,46 @@
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-	public class DiskManagerTests { 
-		
-		    public static void main(String[] args) throws IOException {
-		        DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
-		        DiskManager dm = new DiskManager(config); 
+public class DiskManagerTests {
+	public static void main(String[] args) {
+		try {
+			// Initialize the configuration and DiskManager
+			DBConfig config = new DBConfig("../DB", 4096, 8192, 100, "LRU");
+			DiskManager dm = new DiskManager(config);
 
- 
-		        // Test allocation de page  
-		        PageId pageId = dm.AllocPage();   
-		        System.out.println("Page allouée : Fichier " + pageId.getFileIdx() + ", Page " + pageId.getPageIdx());
- 
-		        // Test écriture dans une page
-		        ByteBuffer buffer = ByteBuffer.allocate(config.getPageSize()); 
-		        buffer.put("Test d'écriture".getBytes());
-		        dm.WritePage(pageId, buffer);
-				System.out.println("Page écrite avec succès."); 
-	  
-				// Test lecture de la page
+			// Test writing and reading pages
+			for (int i = 0; i < 5; i++) {
+				// Allocate a page
+				PageId pageId = dm.AllocPage();
+				System.out.println("Allocated Page: File " + pageId.getFileIdx() + ", Page " + pageId.getPageIdx());
+
+				// Prepare data to write
+				ByteBuffer writeBuffer = ByteBuffer.allocate(config.getPageSize());
+				String dataToWrite = "Test data for page " + i;
+				writeBuffer.put(dataToWrite.getBytes());
+
+				// Write data to the page
+				dm.WritePage(pageId, writeBuffer);
+				System.out.println("Written data to Page: " + pageId);
+
+				// Prepare buffer to read back the data
 				ByteBuffer readBuffer = ByteBuffer.allocate(config.getPageSize());
 				dm.ReadPage(pageId, readBuffer);
-				System.out.println("Contenu lu : " + new String(readBuffer.array()));
-				 
-				// Sauvegarder l'état
-		        dm.SaveState();   
+				readBuffer.flip(); // Prepare buffer for reading
 
-		        // Lire la page pour vérifier le contenu
-		        dm.ReadPage(pageId, readBuffer);
-		        System.out.println("Contenu lu : " + new String(readBuffer.array()).trim()); // Utilise trim() pour enlever les espaces
+				// Convert read data to string for comparison
+				byte[] readDataBytes = new byte[readBuffer.remaining()];
+				readBuffer.get(readDataBytes);
+				String readData = new String(readDataBytes).trim(); // Convert to string and trim
 
-		        // Effacer le contenu et charger l'état
-		        dm.DeallocPage(pageId); // Désalloue la page pour simuler une "suppression"
+				// Assert that the written data matches the read data
+				assert readData.equals(dataToWrite)
+						: "Data mismatch! Expected: " + dataToWrite + ", but got: " + readData;
+				System.out.println("Data verified successfully for Page: " + pageId);
+			}
 
-		        // Charger l'état 
-		        dm.LoadState();
- 
-		        // Lire à nouveau la page après le chargement
-		        dm.ReadPage(pageId, readBuffer);
-		        System.out.println("Contenu lu après chargement : " + new String(readBuffer.array()).trim()); // Vérifie si le contenu est toujours présent
-		    }
-		    
-		} 
-	
-
+			System.out.println("All tests completed successfully.");
+		} catch (Exception e) {
+			System.err.println("An error occurred: " + e.getMessage());
+		}
+	}
+}

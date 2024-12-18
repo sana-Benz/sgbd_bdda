@@ -5,12 +5,26 @@ public class Record {
 	private Relation relation;
 	private ArrayList<String> valeursRec;
 	private RecordId recordId;
+    private ArrayList<Field> fields; // Liste des champs de l'enregistrement
+
 
 	public Record(Relation relation, RecordId recordId) {
 		this.relation = relation;
 		this.valeursRec = new ArrayList<>();
 		this.recordId = recordId;
+        this.fields = new ArrayList<>(); // Initialiser la liste des champs
+
 	}
+	
+	// Méthode pour ajouter un champ
+    public void addField(Field field) {
+        fields.add(field);
+    }
+
+    // Méthode pour obtenir la liste des champs
+    public ArrayList<Field> getFields() {
+        return fields;
+    }
 
 	public ArrayList<String> getValeursRec() {
 		return valeursRec;
