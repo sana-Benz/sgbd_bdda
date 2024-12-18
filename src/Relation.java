@@ -72,7 +72,7 @@ public class Relation {
 		TableInfo += "-- nombre de colonnes : " + nbCol + "|";
 		return TableInfo;
 	}
-  
+
 
 	public int getColIndex(String colName) {
 		for (int i = 0; i < tableCols.size(); i++) {
@@ -83,6 +83,7 @@ public class Relation {
 		return -1;
 	}
 
+
 	// * Méthode writeToBuffer qui écrit l'enregistrement dans un tampon. Elle gère
 	 //* les types de colonnes tels que INT, FLOAT, CHAR (longueur fixe) et VARCHAR
 	// * (longueur variable).
@@ -91,7 +92,6 @@ public class Relation {
 	// * @param pos  : int - la position de départ dans le tampon.
 	 //* @return int : la taille totale de l'enregistrement en octets, ou -1 en cas
 	 //*         d'erreur.
-
 	 public int writeToBuffer(Record record, ByteBuffer buff, int pos) {
 		try {
 			// Définir la position du buffer à la valeur spécifiée
@@ -133,7 +133,7 @@ public class Relation {
 						System.out.println("Position après écriture (writeToBuffer): " + buff.position());
 
 						totalSize += 4 + floatBytes.length; // Ajouter la longueur totale (4 octets pour la taille +
-															// contenu)
+						// contenu)
 						System.out.println("Écrit FLOAT (en BigDecimal) : " + floatValue);
 						break;
 
@@ -169,7 +169,7 @@ public class Relation {
 						System.out.println("Position après écriture (writeToBuffer): " + buff.position());
 
 						totalSize += 4 + varcharLength; // Ajouter 4 octets pour la longueur et la longueur de la chaîne
-														// à la taille totale
+						// à la taille totale
 						System.out.println("Écrit VARCHAR : " + value + " (longueur : " + varcharLength + ")");
 						break;
 
@@ -193,7 +193,7 @@ public class Relation {
 	 * Elle lit les valeurs du Record depuis le buffer à partir de pos, en supposant
 	 * que le
 	 * Record a été écrit avec writeToBuffer.
-	 * 
+	 *
 	 * @param record : dont la liste de valeurs est vide et sera remplie par cette
 	 *               méthode
 	 * @param buff
@@ -215,7 +215,7 @@ public class Relation {
 					System.out.println("Position avant lecture (readFromBuffer) : " + buff.position());
 
 						int valeur_int = buff.getInt(); // lit 4 octs et les interpter comme un entier et avance la pos
-														// du
+						// du
 						// tampon de 4 octs
 						System.out.println("Position après lecture (readFromBuffer): " + buff.position());
 
@@ -244,7 +244,7 @@ public class Relation {
 					case CHAR:
 						int charLength = colInfo.getLengthChar();
 						byte[] charBytes = new byte[charLength]; // Créer un tableau de bytes pour stocker les données
-																	// lues
+						// lues
 						// depuis le tampon
 						System.out.println("Position avant lecture (readFromBuffer) : " + buff.position());
 
@@ -257,9 +257,11 @@ public class Relation {
      					   System.err.println("Problème de taille CHAR : attendue " + charLength + " mais lue " + valeur_char.length());
    						 }
 						record.getValeursRec().add(valeur_char); // Ajouter la valeur lue (chaîne) dans la liste des
+
 																	// valeurs
 						totalSize += charLength;	
 						System.out.println("Lu CHAR: " + valeur_char + " (taille totale jusqu'à présent: " + totalSize + ")");
+
 
 						break;
 					case VARCHAR:
@@ -287,8 +289,7 @@ public class Relation {
 		}
 	}
 
-	
-	
+
   
   /**
 	 * Cette méthode écrit l’enregistrement record dans la page de données identifiée par pageId, et
@@ -305,7 +306,9 @@ public class Relation {
 
 			// Ajoutez ces logs pour déboguer
 			System.out.println("offset pour slot directory: " + (config.getPageSize() - 8));
-			System.out.println(buff.position() == 0);
+			if(buff.position() == 0){
+				System.out.println("le buffer "+buff+" est vide");
+			}
 			// Lire la position de début de l'espace libre
 			int posDebutLibre = buff.getInt(config.getPageSize() - 4);
 			System.out.println("Position début espace libre : " + posDebutLibre);
@@ -359,6 +362,7 @@ public class Relation {
 			throw new RuntimeException("Erreur lors de l'écriture du record sur la page de données", e);
 		}
 	}
+
   
   /**
 	 * Cette méthode retourne le PageId d’une page de données sur laquelle il reste assez de place
@@ -400,7 +404,6 @@ public class Relation {
 		return null; // No page found
 	}
     
-
 
 
 	/**
@@ -554,6 +557,22 @@ public class Relation {
 			System.out.println("Nombre actuel de pages de données dans headerpage avant ajout : " + numPages);
 			System.out.println("allouer une nouvelle datapage");
 			PageId newPageId = disk.AllocPage();
+			headerBuffer.position(4 + numPages * 12); // Move to the correct position for the new page
+			headerBuffer.putInt(newPageId.getFileIdx());
+			headerBuffer.putInt(newPageId.getPageIdx());
+			headerBuffer.putInt(config.getPageSize() - 8); // Initial free space
+			int numPagesIncremente = numPages + 1;
+			// Update the number of pages in the header
+			headerBuffer.putInt(0, numPagesIncremente); // Increment the number of pages
+			System.out.println("Nombre de pages de données incrémenté à : " + numPagesIncremente);
+			System.out.println(
+					"nouvelle position pour la prochaine page dans headerPage " + (4 + numPagesIncremente * 12));
+
+			// Free the pages after use
+			buffer.FreePage(headerPageId, true);
+			System.out.println("libération de la headerPage après ajout nouvelle page" + headerPageBUFFER);
+
+
 			ByteBuffer dataPageBuffer = buffer.GetPage(newPageId);
 			Buffer dataPageBUFFER = new Buffer(newPageId,dataPageBuffer);
 			dataPageBuffer.clear();
@@ -574,26 +593,29 @@ public class Relation {
 			System.out.println("nouvelle position pour la prochaine page dans headerPage "+ (4 + numPagesIncremente * 12) );
 
 
-			// Free the pages after use
-			buffer.FreePage(headerPageId, true);
+
+
 			buffer.FreePage(newPageId, true);
+
 			System.out.println("Pages libérées : HeaderPage (" + headerPageId + ") et DataPage (" + newPageId + ")");
 
 			buffer.flushBuffers();
 			disk.WritePage(headerPageId,headerBuffer);
 			disk.WritePage(newPageId,dataPageBuffer);
 
-			System.out.println("je récupére les pages que je viens d'ajouter");
+			System.out.println("je récupére les pages que je viens d'ajouter dans la fonction addDatapage");
 			ByteBuffer headerpage = buffer.GetPage(headerPageId);
 			ByteBuffer datapage = buffer.GetPage(newPageId);
 			System.out.println("voici ce que g ecrit dans header page "+ " nb pages dans headerpage :" + headerpage.get(0));
 			System.out.println("voici ce que g ecrit dans data page qui est vide apres "+ " position début espace dispo" +datapage.get(config.getPageSize()-4));
 
 
+
 		} catch (Exception e) {
 			System.err.println("Error in addDataPage: " + e.getMessage());
 		}
 	}
+
 
 	/**
 	 * Cette méthode écrit l’enregistrement record dans la page de données identifiée par pageId, et
@@ -666,12 +688,10 @@ public class Relation {
 			throw new RuntimeException("Erreur lors de l'écriture du record sur la page de données", e);
 		}
 	}*/
-
-
-
 	//cette fonction parcourt les entrées des dataPages dans headerpage
 	// Lorsqu'elle trouve une correspondance avec la page spécifiée , elle met à jour l'espace libre
 	// (tailleLibre) en ajoutant la valeur de delta, marque la page d'en-tête comme dirty
+
 	private void updateFreeSpaceInHeader(PageId pageId, int delta) {
 		try {
 			ByteBuffer buff = buffer.GetPage(headerPageId);
@@ -695,11 +715,13 @@ public class Relation {
 		}
 	}
 
+
       
 	
 	//addRecord : Cette méthode vérifie d'abord si une page de données libre est disponible pour insérer 
 	//le nouvel enregistrement.
 	//Si aucune page n'est disponible, elle appelle addDataPage pour en allouer une nouvelle.
+
 	public void addRecord(Record record) {
 	    // Obtenir la taille du record à insérer
 	    int recordSize = calculateRecordSize(record); // Implémentez cette méthode pour calculer la taille
