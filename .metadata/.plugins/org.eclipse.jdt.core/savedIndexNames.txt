@@ -1,0 +1,7 @@
+INDEX VERSION 1.134+C:\Users\dorac\git\sgbd_bdda\.metadata\.plugins\org.eclipse.jdt.core
+3546011611.index
+1288848795.index
+946489985.index
+2232728658.index
+1865797976.index
+2205725569.index
