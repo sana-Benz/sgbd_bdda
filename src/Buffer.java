@@ -64,9 +64,7 @@ import java.nio.ByteBuffer;
 	        pinCount=0;
 	        setDirty(false);
 	        this.data.clear();//vider les données du buffer
-
 			isValid = false; // Marquer le buffer comme non valide
-
 	    }
 		public boolean getDirty() {
 			return dirty; 
@@ -79,5 +77,5 @@ import java.nio.ByteBuffer;
 			return "Le buffer contient la page  "+pageId+" qui a pincount= "+pinCount+" et dirtyBit "+dirty;
 		}
 
-	}
 
+	}

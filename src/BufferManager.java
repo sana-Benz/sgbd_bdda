@@ -1,7 +1,5 @@
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 
 public class BufferManager {
 	private final DBConfig config;
@@ -43,7 +41,7 @@ public class BufferManager {
 		System.out.println("On demande de mettre la page" + pageId + "dans le bufferPool");
 
 		for (Buffer buffer : bufferPool) {
-			if (buffer.getPageId().equals(pageId)&& buffer.isValid()) {
+			if (buffer.getPageId().equals(pageId)) {
 				buffer.incrementPinCount();
 				updateBufferOrder(buffer);
 				System.out.println("la page demandée est déjà dans le bufferpool " + buffer);
@@ -75,9 +73,7 @@ public class BufferManager {
 			return bufferToReplace.getData();
 		}
 		System.out.println("le pool n'est pas plein");
-
 		// Si le pool n'est pas vide, on charge la page depuis le disque
-
 		ByteBuffer newBuffer = loadPageFromDisk(pageId);
 		Buffer newBufferObj = new Buffer(pageId, newBuffer);
 		bufferPool.add(newBufferObj);
@@ -87,8 +83,6 @@ public class BufferManager {
 		return newBufferObj.getData();
 
 	}
-
-
 
 	private ByteBuffer loadPageFromDisk(PageId pageId) {
 		ByteBuffer buffer = ByteBuffer.allocate(config.getPageSize());
@@ -196,7 +190,6 @@ public class BufferManager {
 			}
 		}
 		return null;
-
 	}
 
 	public void bufferPoolState() {
@@ -208,44 +201,4 @@ public class BufferManager {
 		}
 
 	}
-
-	public void bufferPoolState(){
-		System.out.println("\nVoici l'état du bufferPool");
-
-		// Initialiser les listes pour les buffers valides et non valides
-		List<Buffer> buffersValides = new ArrayList<>();
-		List<Buffer> buffersNonValides = new ArrayList<>();
-
-		// Trier les buffers
-		for (Buffer buffer : bufferPool) {
-			if (buffer.isValid()) {
-				buffersValides.add(buffer);
-			} else {
-				buffersNonValides.add(buffer);
-			}
-		}
-
-		// Affichage des buffers valides
-		System.out.println("\nVoici les buffers valides :");
-		if (buffersValides.isEmpty()) {
-			System.out.println("Aucun buffer valide.");
-		} else {
-			for (Buffer buffer : buffersValides) {
-				System.out.println(buffer);
-			}
-		}
-
-		// Affichage des buffers non valides
-		System.out.println("\nVoici les buffers non valides :");
-		if (buffersNonValides.isEmpty()) {
-			System.out.println("Aucun buffer non valide.");
-		} else {
-			for (Buffer buffer : buffersNonValides) {
-				System.out.println(buffer);
-			}
-		}
-
-		System.out.println("\nFin de l'état du bufferPool");
-	}
-
 }

@@ -12,7 +12,7 @@ public class Condition {
         String[] parts = condition.split(" ");
         this.column = parts[0];
         this.operator = parts[1];
-        this.value = parts[2].replace("\"", ""); // Enlever les guillemets
+        this.value = parts[2].replace("\"", ""); 
     }
 
     public boolean evaluate(Record record) {
