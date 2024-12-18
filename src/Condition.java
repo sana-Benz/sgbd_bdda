@@ -30,13 +30,13 @@ public class Condition {
                 case "=":
                     return compareValues(recordValue, value);
                 case "<":
-                    return recordValue.compareTo(value) < 0;
+                    return compareValuesForOrder(recordValue, value) < 0;
                 case ">":
-                    return recordValue.compareTo(value) > 0;
+                    return compareValuesForOrder(recordValue, value) > 0;
                 case "<=":
-                    return recordValue.compareTo(value) <= 0;
+                    return compareValuesForOrder(recordValue, value) <= 0;
                 case ">=":
-                    return recordValue.compareTo(value) >= 0;
+                    return compareValuesForOrder(recordValue, value) >= 0;
                 case "<>":
                     return !compareValues(recordValue, value);
                 default:
@@ -69,5 +69,23 @@ public class Condition {
             return recordValue.equals(searchValue);
         }
     }
+
+    private int compareValuesForOrder(String recordValue, String searchValue) {
+        // Remove quotes if the searchValue is a string
+        if (searchValue.startsWith("\"") && searchValue.endsWith("\"")) {
+            String cleanedSearchValue = searchValue.substring(1, searchValue.length() - 1);
+            return recordValue.compareTo(cleanedSearchValue);
+        }
+        // Fallback to numeric comparison if applicable
+        try {
+            double recordNumber = Double.parseDouble(recordValue);
+            double searchNumber = Double.parseDouble(searchValue);
+            return Double.compare(recordNumber, searchNumber);
+        } catch (NumberFormatException e) {
+            // Fallback to string comparison if numeric parsing fails
+            return recordValue.compareTo(searchValue);
+        }
+    }
+
 
 }
