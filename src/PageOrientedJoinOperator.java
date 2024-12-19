@@ -12,7 +12,7 @@ public class PageOrientedJoinOperator implements IRecordIterator {
     private BufferManager bufferManager1; // Buffer pour la première relation
     private BufferManager bufferManager2; // Buffer pour la deuxième relation
 
-    // Constructeur avec conditions et buffers
+    
     public PageOrientedJoinOperator(PageDirectoryIterator pageDirIter1, PageDirectoryIterator pageDirIter2, 
                                      List<Condition> conditions, BufferManager bufferManager1, BufferManager bufferManager2) {
         this.pageDirIter1 = pageDirIter1;
@@ -55,9 +55,7 @@ public class PageOrientedJoinOperator implements IRecordIterator {
 
             	// Créer un nouveau record avec la relation et l'ID du premier record
             	Record joinedRecord = new Record(currentRecord1.getRelation(), currentRecord1.getRecordId());
-
-            	// Ajouter les valeurs combinées au record
-            	joinedRecord.setValeursRec(combinedValues); // Assurez-vous que la méthode setValeursRec() existe et fonctionne comme attendu
+            	joinedRecord.setValeursRec(combinedValues); 
 
             	return joinedRecord;
             }
@@ -81,10 +79,10 @@ public class PageOrientedJoinOperator implements IRecordIterator {
         // Vérification de chaque condition de jointure
         for (Condition condition : conditions) {
             if (!condition.evaluate(record1) && !condition.evaluate(record2)) {
-                return false;  // Si une condition échoue, on retourne false
+                return false; 
             }
         }
-        return true;  // Toutes les conditions sont satisfaites
+        return true;  
     }
 }
 
