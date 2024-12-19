@@ -50,6 +50,14 @@ public class Relation {
 	public ArrayList<ColInfo> getTableCols() {
 		return tableCols;
 	}
+	
+	public ArrayList<String> getAllColumnNames() {
+	    ArrayList<String> nomsColonnes = new ArrayList<>();
+	    for (ColInfo colInfo : tableCols) {
+	        nomsColonnes.add(colInfo.getNameCol()); // Supposant que ColInfo possède une méthode getNomCol()
+	    }
+	    return nomsColonnes;
+	}
 
 	public PageId getHeaderPageId() {
 		return headerPageId;
@@ -523,28 +531,41 @@ public class Relation {
 			}
 
 			int pageSize = bufferPage.capacity(); // Taille totale de la page
-			int offsetM = pageSize - 4; // Offset de M
+			int offsetM = pageSize - 8; // Offset pour M (nombre de slots)
 			int M = bufferPage.getInt(offsetM);
-			int DebutSlotDirectory = offsetM -4 - (M * 8); // Chaque slot a 8 octets (4 pour position, 4 pour taille)
+
+			System.out.println("Nombre de slots (M) : " + M);
+
+			int DebutSlotDirectory = offsetM - (M * 8); // Chaque slot a 8 octets (position + taille)
+
+			// Valider la position du slot directory
+			if (DebutSlotDirectory < 0 || DebutSlotDirectory >= pageSize) {
+				throw new RuntimeException("Erreur de calcul de l'offset pour le slot directory. Offset invalide.");
+			}
 
 			for (int slotIdx = 0; slotIdx < M; slotIdx++) {
 				int slotOffset = DebutSlotDirectory + (slotIdx * 8); // Position du slot
-				if (slotOffset < 0 || slotOffset + 4 > bufferPage.capacity()) {
-					throw new RuntimeException("Erreur de calcul de l'offset pour le slot directory.");
+				if (slotOffset < 0 || slotOffset + 8 > pageSize) {
+					throw new RuntimeException("Offset de slot invalide : " + slotOffset);
 				}
-				// Lire la position de début et la taille du record
-				int recordStart = bufferPage.getInt(slotOffset);       // la position du record (1er 4o)
-				int recordSize = bufferPage.getInt(slotOffset + 4);   // la taille du record (2eme 4o)
 
-				// Vérifier si le record est valide (taille > 0)
-				if (recordSize > 0 && recordStart != -1) {
+				// Lire la position de début et la taille du record
+				int recordStart = bufferPage.getInt(slotOffset);
+				int recordSize = bufferPage.getInt(slotOffset + 4);
+
+				System.out.println("Slot " + slotIdx + ": Start = " + recordStart + ", Size = " + recordSize);
+
+				// Vérifier si le record est valide
+				if (recordSize > 0 && recordStart >= 0 && recordStart + recordSize <= DebutSlotDirectory) {
 					RecordId rid = new RecordId(pageId, slotIdx);
 					Record record = new Record(this, rid);
 					int bytesRead = readFromBuffer(record, bufferPage, recordStart);
 					if (bytesRead != recordSize) {
-						throw new IllegalStateException("Erreur : taille de record incohérente.");
+						throw new IllegalStateException("Taille de record incohérente : attendue " + recordSize + ", lue " + bytesRead);
 					}
 					listeRecords.add(record);
+				} else {
+					System.out.println("Record invalide : Start = " + recordStart + ", Size = " + recordSize);
 				}
 			}
 		} catch (Exception e) {
@@ -562,6 +583,7 @@ public class Relation {
 		}
 		return listeRecords;
 	}
+
 
 
 
@@ -666,7 +688,7 @@ public class Relation {
 	 * Cette méthode écrit l’enregistrement record dans la page de données identifiée par pageId, et
 	 *  renvoie son RecordId.
 	 *  On suppose que la page dispose d’assez d’espace disponible pour l’insertion.
-	 * @param record
+	 //* @param record
 	 * @param pageId
 	 * @return RecordId du record écrit dans la dataPage
 	 */
@@ -813,4 +835,43 @@ public class Relation {
 	    }
 	    return size;
 	}
+
+	public RecordId allocateNextRecordId() {
+		try {
+			// Parcourir les pages existantes pour trouver un emplacement libre
+			ArrayList<PageId> dataPages = getDataPages();
+			for (PageId pageId : dataPages) {
+				ByteBuffer pageBuffer = buffer.GetPage(pageId);
+				int slotCount = pageBuffer.getInt(pageBuffer.capacity() - 8); // Nombre de slots
+				int freeSpaceStart = pageBuffer.getInt(pageBuffer.capacity() - 4); // Position libre
+
+				// Parcourir les slots pour vérifier s'il y a un espace libre
+				for (int slotIdx = 0; slotIdx < slotCount; slotIdx++) {
+					int slotOffset = pageBuffer.capacity() - 8 - 8 * (slotIdx + 1); // Offset du slot
+					int recordStart = pageBuffer.getInt(slotOffset);
+					if (recordStart == -1) { // Slot libre trouvé
+						buffer.FreePage(pageId, false);
+						return new RecordId(pageId, slotIdx);
+					}
+				}
+
+				// Vérifier s'il y a encore de l'espace libre dans la page
+				if (freeSpaceStart < (pageBuffer.capacity() - 8 - slotCount * 8)) {
+					buffer.FreePage(pageId, false);
+					return new RecordId(pageId, slotCount);
+				}
+
+				buffer.FreePage(pageId, false);
+			}
+
+			// Si aucune page existante n'a d'espace, ajouter une nouvelle page
+			addDataPage();
+			PageId newPageId = getDataPages().get(getDataPages().size() - 1);
+			return new RecordId(newPageId, 0); // Retourner le premier slot de la nouvelle page
+
+		} catch (Exception e) {
+			throw new RuntimeException("Erreur dans allocateNextRecordId : " + e.getMessage());
+		}
+	}
+
 }
