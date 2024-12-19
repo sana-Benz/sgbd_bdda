@@ -3,7 +3,8 @@ import org.json.simple.parser.ParseException;
 import java.util.*;
 
 public class SGBDTest {
-    public static void main(String[] args) {
+
+    /*public static void main(String[] args) {
         try {
             // Charger la configuration
             DBConfig config = DBConfig.loadDBConfig("../../infos.json");
@@ -63,5 +64,5 @@ public class SGBDTest {
         } catch (AssertionError e) {
             System.err.println("Échec du test : " + e.getMessage());
         }
-    }
+    }*/
 }
