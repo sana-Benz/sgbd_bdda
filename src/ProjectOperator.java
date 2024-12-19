@@ -2,7 +2,7 @@ import java.util.List;
 
 public class ProjectOperator implements IRecordIterator {
 
-    private IRecordIterator iterateurFils;  // L'itérateur fils (qui est en général un SelectOperator)
+    private IRecordIterator iterateurFils; 
     private List<String> attributsAConserver;  // Liste des attributs à conserver
     private Record recordActuel;
 
