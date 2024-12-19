@@ -75,14 +75,13 @@ public class PageOrientedJoinOperator implements IRecordIterator {
     }
 
     // Méthode pour vérifier si les conditions de jointure sont satisfaites
-    private boolean joinConditionsSatisfied(Record record1, Record record2) {
-        // Vérification de chaque condition de jointure
-        for (Condition condition : conditions) {
-            if (!condition.evaluate(record1) && !condition.evaluate(record2)) {
-                return false; 
-            }
+  private boolean joinConditionsSatisfied(Record record1, Record record2) {
+    for (Condition condition : conditions) {
+        if (!condition.evaluate(record1) || !condition.evaluate(record2)) {
+            return false; 
         }
-        return true;  
     }
+    return true;  
+}
 }
 
