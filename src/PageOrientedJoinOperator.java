@@ -1,83 +1,90 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public class PageOrientedJoinOperator implements IRecordIterator {
+    private PageDirectoryIterator pageDirIter1;
+    private PageDirectoryIterator pageDirIter2;
+    private DataPageHoldRecordIterator pageIter1;
+    private DataPageHoldRecordIterator pageIter2;
+    private Record currentRecord1;
+    private Record currentRecord2;
+    private List<Condition> conditions;  // Liste des conditions de jointure
+    private BufferManager bufferManager1; // Buffer pour la première relation
+    private BufferManager bufferManager2; // Buffer pour la deuxième relation
 
-    private PageId leftPageId;
-    private PageId rightPageId;
-    private BufferManager bufferManager;
-    private IRecordIterator leftIterator;  // Itérateur pour les records de la page gauche
-    private IRecordIterator rightIterator; // Itérateur pour les records de la page droite
-    private Record currentLeftRecord;      // Record actuel de la page gauche
-    private Record currentRightRecord;     // Record actuel de la page droite
-    private Condition joinCondition;       // Condition de jointure
-
-    public PageOrientedJoinOperator(PageId leftPid, PageId rightPid, BufferManager buffer, String condition) {
-        this.leftPageId = leftPid;
-        this.rightPageId = rightPid;
-        this.bufferManager = buffer;
-        this.joinCondition = new Condition(condition);
-
-        // Initialiser les itérateurs pour parcourir les pages des relations
-        this.leftIterator = new DataPageHoldRecordIterator(leftPageId, bufferManager);
-        this.rightIterator = new DataPageHoldRecordIterator(rightPageId, bufferManager);
+    // Constructeur avec conditions et buffers
+    public PageOrientedJoinOperator(PageDirectoryIterator pageDirIter1, PageDirectoryIterator pageDirIter2, 
+                                     List<Condition> conditions, BufferManager bufferManager1, BufferManager bufferManager2) {
+        this.pageDirIter1 = pageDirIter1;
+        this.pageDirIter2 = pageDirIter2;
+        this.conditions = conditions;
+        this.bufferManager1 = bufferManager1;
+        this.bufferManager2 = bufferManager2;
     }
 
     @Override
     public Record GetNextRecord() {
-        // Cherche le prochain enregistrement qui satisfait la condition de jointure
-        if (findNextMatchingRecord()) {
-            return combineRecords(currentLeftRecord, currentRightRecord);
-        }
-        return null;  // Aucun match trouvé
-    }
-
-    private boolean findNextMatchingRecord() {
-        // Parcours des records à gauche
+        // Lecture des pages pour les deux relations en utilisant deux buffers différents
         while (true) {
-            currentLeftRecord = leftIterator.GetNextRecord();
-            if (currentLeftRecord == null) {
-                return false;  // Aucun record à gauche à traiter
-            }
-
-            rightIterator.Reset();  // Réinitialiser l'itérateur de la page droite
-
-            // Parcours des records à droite
-            while (true) {
-                currentRightRecord = rightIterator.GetNextRecord();
-                if (currentRightRecord == null) {
-                    break;  // Plus de records à droite
+            // Chargement de la prochaine page de la première relation
+            if (pageIter1 == null || !pageIter1.hasNext()) {
+                PageId pageId1 = pageDirIter1.GetNextDataPageId();
+                if (pageId1 == null) {
+                    return null;  // Plus de pages pour la première relation
                 }
-
-                // Vérifier la condition de jointure
-                if (checkJoinCondition(currentLeftRecord, currentRightRecord)) {
-                    return true;  // Une correspondance a été trouvée
-                }
+                pageIter1 = new DataPageHoldRecordIterator(pageId1, bufferManager1);
             }
-        }
-    }
+            currentRecord1 = pageIter1.GetNextRecord();  // Récupération du prochain record de la relation 1
 
-    boolean checkJoinCondition(Record left, Record right) {
-        return joinCondition.evaluate(left) && joinCondition.evaluate(right);
-    }
+            // Chargement de la première page de la seconde relation
+            if (pageIter2 == null || !pageIter2.hasNext()) {
+                PageId pageId2 = pageDirIter2.GetNextDataPageId();
+                if (pageId2 == null) {
+                    return null;  // Plus de pages pour la seconde relation
+                }
+                pageIter2 = new DataPageHoldRecordIterator(pageId2, bufferManager2);
+            }
+            currentRecord2 = pageIter2.GetNextRecord();  // Récupération du prochain record de la relation 2
 
-    private Record combineRecords(Record left, Record right) {
-        Record combined = new Record(left.getRelation(), left.getRecordId());
-        combined.getValeursRec().addAll(left.getValeursRec());
-        combined.getValeursRec().addAll(right.getValeursRec());
-        return combined;
+            // Vérification des conditions de jointure
+            if (joinConditionsSatisfied(currentRecord1, currentRecord2)) {
+            	// Combiner les valeurs des deux records
+            	ArrayList<String> combinedValues = new ArrayList<>();
+            	combinedValues.addAll(currentRecord1.getValeursRec());  // Valeurs du premier record
+            	combinedValues.addAll(currentRecord2.getValeursRec());  // Valeurs du second record
+
+            	// Créer un nouveau record avec la relation et l'ID du premier record
+            	Record joinedRecord = new Record(currentRecord1.getRelation(), currentRecord1.getRecordId());
+
+            	// Ajouter les valeurs combinées au record
+            	joinedRecord.setValeursRec(combinedValues); // Assurez-vous que la méthode setValeursRec() existe et fonctionne comme attendu
+
+            	return joinedRecord;
+            }
+            }
     }
 
     @Override
     public void Reset() {
-        leftIterator.Reset();
-        rightIterator.Reset();
+        pageDirIter1.Reset();
+        pageDirIter2.Reset();
     }
 
     @Override
     public void Close() {
-        if (leftIterator != null) {
-            leftIterator.Close();
+        if (pageIter1 != null) pageIter1.Close();
+        if (pageIter2 != null) pageIter2.Close();
+    }
+
+    // Méthode pour vérifier si les conditions de jointure sont satisfaites
+    private boolean joinConditionsSatisfied(Record record1, Record record2) {
+        // Vérification de chaque condition de jointure
+        for (Condition condition : conditions) {
+            if (!condition.evaluate(record1) && !condition.evaluate(record2)) {
+                return false;  // Si une condition échoue, on retourne false
+            }
         }
-        if (rightIterator != null) {
-            rightIterator.Close();
-        }
+        return true;  // Toutes les conditions sont satisfaites
     }
 }
+
