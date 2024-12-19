@@ -36,7 +36,7 @@ public class SGBD {
             this.diskManager = new DiskManager(config);
             this.bufferManager = new BufferManager(config, diskManager);
             this.dbManager = new DBManager(config, diskManager, bufferManager); // Passer les gestionnaires ici
-            
+
             // Charger l'état des gestionnaires
             diskManager.LoadState();
             dbManager.LoadState();
@@ -66,7 +66,7 @@ public class SGBD {
         dbManager.SaveState();
         bufferManager.flushBuffers();
     }
-    
+
     public void ProcessCreateDatabaseCommand(String commande) {
         String[] parts = commande.split(" "); // Diviser la commande en parties
         if (parts.length < 3) {
@@ -76,18 +76,18 @@ public class SGBD {
         String nomBdd = parts[2]; // Récupérer le nom de la base de données
         dbManager.CreateDatabase(nomBdd); // Passer uniquement le nom à la méthode
     }
-    
+
     // Méthode pour définir la base de données courante
     public void ProcessSetDatabaseCommand(String nomBdd) {
         // Vérifiez si la base existe
-    	if (dbManager.databases.contains(nomBdd)) {
+        if (dbManager.databases.contains(nomBdd)) {
             dbManager.setCurrentDatabase(nomBdd); // Assurez-vous d'avoir une méthode pour définir la base courante
             System.out.println("Base de données courante définie sur : " + nomBdd);
         } else {
             System.out.println("La base de données " + nomBdd + " n'existe pas.");
         }
     }
-    
+
     // Méthode pour supprimer une base de données
     public void ProcessDropDatabaseCommand(String nomBdd) {
         if (dbManager.databases.contains(nomBdd)) {
@@ -97,7 +97,7 @@ public class SGBD {
             System.out.println("La base de données " + nomBdd + " n'existe pas.");
         }
     }
-    
+
     // Méthode pour supprimer toutes les bases de données
     public void ProcessDropDatabasesCommand() {
         System.out.println("Nombre de bases de données avant suppression : " + dbManager.databases.size());
@@ -110,13 +110,13 @@ public class SGBD {
         dbManager.RemoveAllDatabases();
         System.out.println("Toutes les bases de données ont été supprimées avec succès !");
     }
-    
+
     // Méthode pour lister les bases de données
     public void ProcessListDatabasesCommand() {
         dbManager.ListDatabases();
     }
-    
- // Méthode pour créer une table
+
+    // Méthode pour créer une table
     public void ProcessCreateTableCommand(String commande) {
         // Vérifiez que la commande commence par "create table"
         if (!commande.startsWith("create table")) {
@@ -190,8 +190,8 @@ public class SGBD {
         dbManager.CreateTable(nomTable, colonnes);
         System.out.println("Table " + nomTable + " créée avec succès !");
     }
-    
- // Méthode pour supprimer une table
+
+    // Méthode pour supprimer une table
     public void ProcessDropTableCommand(String nomTable) {
         if (dbManager.tableExists(nomTable)) {
             dbManager.RemoveTable(nomTable);
@@ -201,8 +201,8 @@ public class SGBD {
             System.out.println("La table " + nomTable + " n'existe pas.");
         }
     }
-    
- // Méthode pour supprimer toutes les tables
+
+    // Méthode pour supprimer toutes les tables
     public void ProcessDropTablesCommand() {
         dbManager.RemoveAllTables();
         System.out.println("Toutes les tables ont été supprimées avec succès !");
@@ -212,8 +212,8 @@ public class SGBD {
     public void ProcessListTablesCommand() {
         dbManager.ListTables();
     }
-    
-    //Methode pour INSERT 
+
+    //Methode pour INSERT
     public void processInsertCommand(String command) throws Exception {
         // Exemple de commande : INSERT INTO nomRelation VALUES (val1,val2,...)
         String[] parts = command.split(" ");
@@ -240,16 +240,17 @@ public class SGBD {
         }
 
         // Ajoutez le record à la relation
-        Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), 0)); //on ne doit pas prendre le id de headerpage mais celui de datapage 
+        Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), 0)); //on ne doit pas prendre le id de headerpage mais celui de datapage
         ArrayList<String> valeursRec = new ArrayList<>();
         for (String value : values) {
-            valeursRec.add(value.trim().replace("\"", "")); 
+            valeursRec.add(value.trim().replace("\"", ""));
         }
         record.setValeursRec(valeursRec);
         relation.addRecord(record); // Méthode à implémenter dans Relation
         System.out.println("Record inséré avec succès.");
     }
-    
+
+
    /*public void processBulkInsertCommand(String command) throws Exception {
         // Exemple de commande : BULKINSERT INTO nomRelation nomFichier.csv
         String[] parts = command.split(" ");
@@ -299,8 +300,8 @@ public class SGBD {
             System.out.println("Erreur lors de l'insertion : " + e.getMessage());
         }
     }*/
-    
-   
+
+
 
     public void processBulkInsertCommand(String command) throws Exception {// BULKINSERT INTO tab1 CSV.csv
         String[] parts = command.split(" ");
@@ -326,7 +327,7 @@ public class SGBD {
         try (CSVReader csvReader = new CSVReaderBuilder(new FileReader(fileName))
                 .withCSVParser(new com.opencsv.CSVParserBuilder().withSeparator(',').build())  // Définir le séparateur ici
                 .build()) {
-            
+
             String[] values;
             int lineNumber = 0;
             int errorCount = 0;
@@ -365,157 +366,157 @@ public class SGBD {
         }
     }
 
-   
-  
-  public void processSelectCommand(String command) {
-    // Définir un modèle pour analyser la commande SELECT
-    String regex = "^SELECT\\s+(.+?)\\s+FROM\\s+(\\w+)(?:\\s+(\\w+))?(?:\\s+WHERE\\s+(.+))?$";
-    Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-    Matcher matcher = pattern.matcher(command.trim());
 
-    // Vérifier si la commande correspond au modèle
-    if (!matcher.matches()) {
-        System.out.println("Commande SELECT invalide.");
-        return;
-    }
 
-    // Extraire les parties de la commande
-    String columnsPart = matcher.group(1);   // Colonnes à afficher
-    String relationName = matcher.group(2);  // Nom de la table
-    String alias = matcher.group(3);         // Alias de la table (peut être null)
-    String whereClause = matcher.group(4);   // Clause WHERE (facultatif)
+    public void processSelectCommand(String command) {
+        // Définir un modèle pour analyser la commande SELECT
+        String regex = "^SELECT\\s+(.+?)\\s+FROM\\s+(\\w+)(?:\\s+(\\w+))?(?:\\s+WHERE\\s+(.+))?$";
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(command.trim());
 
-    // Vérifier si la relation existe
-    Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
-    if (relation == null) {
-        System.out.println("La relation " + relationName + " n'existe pas.");
-        return;
-    }
-
-    // Si aucun alias n'est fourni, utilisez le nom de la table comme alias par défaut
-    if (alias == null) {
-        alias = relationName;
-    }
-
-    // Déterminer les colonnes à afficher
-    List<String> selectedColumns = new ArrayList<>();
-    if (columnsPart.equals("*")) {
-        selectedColumns = relation.getAllColumnNames();
-    } else {
-        String[] columns = columnsPart.split(",");
-        for (String col : columns) {
-            if (col.contains(".")) {
-                String colAlias = col.split("\\.")[0].trim(); // Alias dans la colonne
-                String colName = col.split("\\.")[1].trim(); // Nom de la colonne
-
-                // Vérifier si l'alias dans la colonne correspond à celui attendu
-                if (!colAlias.equals(alias)) {
-                    System.out.println("Alias inattendu pour la colonne : " + col);
-                    return;
-                }
-                selectedColumns.add(colName);
-            } else {
-                // Ajouter directement si aucune partie d'alias n'est donnée
-                selectedColumns.add(col.trim());
-            }
-        }
-    }
-
-    // Vérification de la clause WHERE
-    Condition condition = null;
-    if (whereClause != null) {
-        try {
-            condition = new Condition(whereClause, alias, relation); // Utilise la classe Condition pour gérer les clauses complexes
-            System.out.println("WHERE Clause: " + whereClause);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Erreur dans la clause WHERE : " + e.getMessage());
+        // Vérifier si la commande correspond au modèle
+        if (!matcher.matches()) {
+            System.out.println("Commande SELECT invalide.");
             return;
         }
-    } else {
-        System.out.println("No WHERE clause.");
-    }
 
-    // Itération sur les tuples et affichage des résultats
-    int totalRecords = 0;
-    for (Record record : relation.getAllRecords()) {
-        // Évaluer la condition (inclut les "AND" si présents)
-        if (condition == null || condition.evaluate(record)) {
-            totalRecords++;
-            StringBuilder output = new StringBuilder();
-            for (String col : selectedColumns) {
-                try {
-                    output.append(record.getValeurByNomCol(col)).append(" ; "); // Récupérer la valeur de chaque colonne
-                } catch (Exception e) {
-                    System.out.println("Erreur dans la récupération de la colonne : " + col);
-                    return;
+        // Extraire les parties de la commande
+        String columnsPart = matcher.group(1);   // Colonnes à afficher
+        String relationName = matcher.group(2);  // Nom de la table
+        String alias = matcher.group(3);         // Alias de la table (peut être null)
+        String whereClause = matcher.group(4);   // Clause WHERE (facultatif)
+
+        // Vérifier si la relation existe
+        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
+        if (relation == null) {
+            System.out.println("La relation " + relationName + " n'existe pas.");
+            return;
+        }
+
+        // Si aucun alias n'est fourni, utilisez le nom de la table comme alias par défaut
+        if (alias == null) {
+            alias = relationName;
+        }
+
+        // Déterminer les colonnes à afficher
+        List<String> selectedColumns = new ArrayList<>();
+        if (columnsPart.equals("*")) {
+            selectedColumns = relation.getAllColumnNames();
+        } else {
+            String[] columns = columnsPart.split(",");
+            for (String col : columns) {
+                if (col.contains(".")) {
+                    String colAlias = col.split("\\.")[0].trim(); // Alias dans la colonne
+                    String colName = col.split("\\.")[1].trim(); // Nom de la colonne
+
+                    // Vérifier si l'alias dans la colonne correspond à celui attendu
+                    if (!colAlias.equals(alias)) {
+                        System.out.println("Alias inattendu pour la colonne : " + col);
+                        return;
+                    }
+                    selectedColumns.add(colName);
+                } else {
+                    // Ajouter directement si aucune partie d'alias n'est donnée
+                    selectedColumns.add(col.trim());
                 }
             }
-            if (output.length() > 3) {
-                output.setLength(output.length() - 3); // Enlever le dernier " ; "
-            }
-            output.append(".");
-            System.out.println(output);
         }
+
+        // Vérification de la clause WHERE
+        Condition condition = null;
+        if (whereClause != null) {
+            try {
+                condition = new Condition(whereClause, alias, relation); // Utilise la classe Condition pour gérer les clauses complexes
+                System.out.println("WHERE Clause: " + whereClause);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Erreur dans la clause WHERE : " + e.getMessage());
+                return;
+            }
+        } else {
+            System.out.println("No WHERE clause.");
+        }
+
+        // Itération sur les tuples et affichage des résultats
+        int totalRecords = 0;
+        for (Record record : relation.getAllRecords()) {
+            // Évaluer la condition (inclut les "AND" si présents)
+            if (condition == null || condition.evaluate(record)) {
+                totalRecords++;
+                StringBuilder output = new StringBuilder();
+                for (String col : selectedColumns) {
+                    try {
+                        output.append(record.getValeurByNomCol(col)).append(" ; "); // Récupérer la valeur de chaque colonne
+                    } catch (Exception e) {
+                        System.out.println("Erreur dans la récupération de la colonne : " + col);
+                        return;
+                    }
+                }
+                if (output.length() > 3) {
+                    output.setLength(output.length() - 3); // Enlever le dernier " ; "
+                }
+                output.append(".");
+                System.out.println(output);
+            }
+        }
+        System.out.println("Total records = " + totalRecords);
     }
-    System.out.println("Total records = " + totalRecords);
-}
 
 
 
 
 
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-   
-    
- // Méthode Run
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // Méthode Run
     public void Run() throws Exception {
         Scanner scanner = new Scanner(System.in);
         String commande;
@@ -560,8 +561,8 @@ public class SGBD {
             } else if (commande.startsWith("SELECT")) { // Ajout de la commande de sélection
                 processSelectCommand(commande);
             }else if (commande.startsWith("BULKINSERT INTO")) {
-            	processBulkInsertCommand( commande);
-            	
+                processBulkInsertCommand( commande);
+
             } else {
                 System.out.println("Commande non reconnue.");
             }
@@ -589,4 +590,3 @@ public class SGBD {
             System.err.println("Erreur lors de la configuration du SGBD : " + e.getMessage());
         }
     }}
-    

@@ -6,15 +6,17 @@ public class Condition {
     private String columnName;
     private String operator;
     private String value;
+    private Relation relation;
 
     // Constructeur pour les conditions complexes et simples
-    public Condition(String whereClause, String alias) {
+    public Condition(String whereClause, String alias, Relation relation) {
+        this.relation = relation;
         this.subConditions = new ArrayList<>();
         if (whereClause.contains(" AND ")) {
             // Découper la clause WHERE en sous-conditions avec "AND"
             String[] conditions = whereClause.split("\\s+AND\\s+");
             for (String condition : conditions) {
-                this.subConditions.add(new Condition(condition.trim(), alias));
+                this.subConditions.add(new Condition(condition.trim(), alias,relation));
             }
         } else {
             // Condition simple

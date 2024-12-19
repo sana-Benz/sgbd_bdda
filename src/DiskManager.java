@@ -46,7 +46,7 @@ public class DiskManager {
     }
 
     private int nbPagesFichier(RandomAccessFile fichier) { // Calcule le nombre de pages qui existent/sont allouées dans
-                                                           // le fichier
+        // le fichier
         try {
             int nbPagesFichier = (int) (fichier.length() / config.getPageSize());
             return (nbPagesFichier);
@@ -61,7 +61,7 @@ public class DiskManager {
      * à la demande
      * d’une des couches au-dessus. Elle retourne un PageId correspondant à la page
      * nouvellement rajoutée.
-     * 
+     *
      * @return PageId
      * @throws IOException
      */
@@ -104,7 +104,7 @@ public class DiskManager {
      * Cette méthode remplit l’argument buff en copiant dans ce buffer le contenu
      * disque de la
      * page identifiée par l’argument pageId.
-     * 
+     *
      * @param pageId
      * @param buff
      */
@@ -134,7 +134,7 @@ public class DiskManager {
      * Cette méthode remplit l’argument buff en copiant dans ce buffer le contenu
      * disque de la
      * page identifiée par l’argument pageId.
-     * 
+     *
      * @param pageId
      * @param buff
      */
@@ -169,7 +169,7 @@ public class DiskManager {
      *
      * Cette méthode désalloue une page, et la rajoute dans la liste des pages
      * «libres».
-     * 
+     *
      * @param pageId
      */
     public void DeallocPage(PageId pageId) {
@@ -206,7 +206,7 @@ public class DiskManager {
     public void SaveState() {
         // on sauvegarde la liste des pages vides
         String cheminFichier = config.getDbpath() + "/dm.save"; // Le fichier s’appellera dm.save et sera placé à la
-                                                                // racine dossier dbpath .?
+        // racine dossier dbpath .?
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(cheminFichier))) {
             writer.write("IndexFichierCourant:" + indexFichierCourant);
             writer.newLine();

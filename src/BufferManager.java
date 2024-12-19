@@ -63,7 +63,7 @@ public class BufferManager {
 			}
 		}
 
-			//sinon si le bufferpool est plein avec des buffers valides
+		//sinon si le bufferpool est plein avec des buffers valides
 
 		//si la page n'est pas dans les buffers et que le pool est plein avec des buffers valides on doit choisir une victime
 		if(bufferPool.size()>=config.getBm_buffercount()) {
