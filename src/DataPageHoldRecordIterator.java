@@ -13,7 +13,7 @@ public class DataPageHoldRecordIterator implements IRecordIterator {
         this.pageId = pageId;
         this.bufferManager = bufferManager;
         this.buffer = bufferManager.GetPage(pageId); // Charge la page en mémoire
-        this.currentIndex = 0; // On commence au premier record
+        this.currentIndex = 0;
     }
  
     // Retourne le prochain record ou null s'il n'y en a plus
