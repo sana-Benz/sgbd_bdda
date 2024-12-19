@@ -15,14 +15,15 @@ public class RelationScanner implements IRecordIterator {
     @Override
     public Record GetNextRecord() {
         if (indexActuel >= enregistrements.size()) {
-            return null;  // Plus d'enregistrements
+            return null;  
         }
         return enregistrements.get(indexActuel++);  // Retourne l'enregistrement suivant et incrémente l'index
     }
 
     @Override
     public void Close() {
-        // Libérer des ressources si nécessaire
+        enregistrements = null;
+        indexActuel = 0;
     }
 
     @Override
