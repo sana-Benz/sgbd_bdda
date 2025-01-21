@@ -28,3 +28,10 @@ bin/
 ### Mac OS ###
 .DS_Store
 .idea/
+
+### Systèmes d'exploitation ###
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+.cache/
