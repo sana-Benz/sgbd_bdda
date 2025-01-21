@@ -1,3 +1,4 @@
+package Relation;
 
 public enum ColmType {
 	    INT,

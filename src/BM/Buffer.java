@@ -1,6 +1,9 @@
-import java.nio.ByteBuffer;
+package BM;
 
-	public class Buffer {
+import java.nio.ByteBuffer;
+import DM.PageId;
+
+public class Buffer {
 	    private PageId pageId;
 	    private ByteBuffer data;
 	    private int pinCount;

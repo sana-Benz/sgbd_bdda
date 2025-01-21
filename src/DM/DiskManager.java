@@ -1,3 +1,5 @@
+package DM;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -19,22 +21,24 @@ public class DiskManager {
     private static int indexFichierCourant = 0;
     private Map<String, List<PageId>> pagesAllouees; // Map pour suivre les pages allouées par table
 
+    public List<Integer> getPagesLibres() {
+        return pagesLibres;
+    }
     public DiskManager(DBConfig config) throws IOException {
         this.config = config;
         this.nbMaxPages = config.getDm_maxfilesize() / config.getPageSize();
         this.pagesAllouees = new HashMap<>(); // Initialiser la map
 
-        // Création du dossier DB s'il n'existe pas
-        File dbDirectory = new File(config.getDbpath());
-        if (!dbDirectory.exists()) {
-            dbDirectory.mkdir(); // Créer le dossier DB
-        }
-        // Création du dossier Bin_Data s'il n'existe pas
-        File binDataDirectory = new File(dbDirectory, "Bin_Data");
-        if (!binDataDirectory.exists()) {
-            binDataDirectory.mkdir(); // Créer le dossier Bin_Data
-        }
-
+            // Création du dossier DB s'il n'existe pas
+            File dbDirectory = new File(config.getDbpath());
+            if (!dbDirectory.exists()) {
+                dbDirectory.mkdir(); // Créer le dossier DB
+            }
+            // Création du dossier Bin_Data s'il n'existe pas
+            File binDataDirectory = new File(dbDirectory, "Bin_Data");
+            if (!binDataDirectory.exists()) {
+                binDataDirectory.mkdir(); // Créer le dossier Bin_Data
+            }
     }
 
     private String construireNomFichier(int index) {
@@ -59,13 +63,14 @@ public class DiskManager {
     /**
      * Cette méthode doit allouer une page, c’est à dire réserver une nouvelle page
      * à la demande
-     * d’une des couches au-dessus. Elle retourne un PageId correspondant à la page
+     * d’une des couches au-dessus. Elle retourne un DM.PageId correspondant à la page
      * nouvellement rajoutée.
      * 
-     * @return PageId
+     * @return DM.PageId
      * @throws IOException
      */
-    public PageId AllocPage() throws IOException {
+    public PageId AllocPage(){
+        // Ouvrir le fichier correspondant à indexFichierCourant
         try (RandomAccessFile fichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant), "rw")) {
             if (!pagesLibres.isEmpty()) {
                 Integer indicePageLibre = pagesLibres.remove(pagesLibres.size() - 1);
@@ -74,16 +79,17 @@ public class DiskManager {
             }
             if (nbPagesFichier(fichier) < nbMaxPages) {
                 PageId pageId = new PageId(indexFichierCourant, nbPagesFichier(fichier));
-                initializePage(pageId); // Ensure the page is properly initialized
+                initializePage(pageId);
                 return pageId;
             }
+            // Si le fichier actuel est plein, créer un nouveau fichier
             indexFichierCourant++;
             try (RandomAccessFile nouveauFichier = new RandomAccessFile(construireCheminFichier(indexFichierCourant),
                     "rw")) {
                 ByteBuffer newPage = ByteBuffer.allocate(config.getPageSize());
                 nouveauFichier.write(newPage.array());
                 PageId pageId = new PageId(indexFichierCourant, 0);
-                initializePage(pageId); // Ensure the page is properly initialized
+                initializePage(pageId);
                 return pageId;
             } catch (IOException e) {
                 System.out.println("Erreur lors de la création du nouveau fichier : " + e.getMessage());
@@ -111,20 +117,19 @@ public class DiskManager {
     public void ReadPage(PageId pageId, ByteBuffer buff) {
         try (RandomAccessFile file = new RandomAccessFile(construireCheminFichier(pageId.getFileIdx()), "r")) {
             int offset = pageId.getPageIdx() * config.getPageSize();
-            System.out.println("Lecture de la page : " + pageId);
+            //System.out.println("Lecture de la page : " + pageId);
 
             file.seek(offset); // Se déplacer à la bonne position
             byte[] pageData = new byte[config.getPageSize()];
             int bytesRead = file.read(pageData);
 
             if (bytesRead < config.getPageSize()) {
-                throw new IOException("Lecture incomplète pour PageId: " + pageId);
+                throw new IOException("Lecture incomplète pour DM.PageId: " + pageId);
             }
 
             buff.clear(); // Préparer le buffer pour l'écriture
             buff.put(pageData); // Copier les octets lus dans le buffer
             buff.flip(); // Préparer le buffer pour la lecture
-            System.out.println("Buffer Après lecture: " + Arrays.toString(Arrays.copyOf(buff.array(), 16)));
         } catch (IOException e) {
             System.err.println("Error while reading page: " + e.getMessage());
         }
@@ -150,18 +155,8 @@ public class DiskManager {
             buff.get(pageData, 0, bytesToWrite); // Lire les données du buffer
             file.write(pageData); // Écrire les données dans le fichier
 
-            // Validation de l'écriture
-            ByteBuffer validationBuffer = ByteBuffer.allocate(config.getPageSize());
-            file.seek(offset);
-            file.read(validationBuffer.array());
-            if (!Arrays.equals(validationBuffer.array(), pageData)) {
-                System.err
-                        .println("Erreur d'écriture de la page dans le disque : la data ne se correspond pas" + pageId);
-            } else {
-                System.out.println("Page écrite avec succès dans le disque " + pageId);
-            }
         } catch (IOException e) {
-            System.err.println("Error writing page: " + e.getMessage());
+            System.err.println("Erreur dans l'écriture de page: " + e.getMessage());
         }
     }
 
@@ -174,7 +169,7 @@ public class DiskManager {
      */
     public void DeallocPage(PageId pageId) {
         // effacer le contenu de la page
-        ByteBuffer emptyBuffer = ByteBuffer.allocate(config.getPageSize()); // Buffer vide rempli de zéros
+        ByteBuffer emptyBuffer = ByteBuffer.allocate(config.getPageSize()); // BM.Buffer vide rempli de zéros
         WritePage(pageId, emptyBuffer);
         pagesLibres.add(pageId.getPageIdx());
         SaveState();
@@ -194,7 +189,7 @@ public class DiskManager {
         }
 
         pagesAllouees.remove(nomTable); // Supprimer les entrées de la map
-        System.out.println("Désallocation des pages pour la table " + nomTable + " effectuée avec succès !");
+        //System.out.println("Désallocation des pages pour la table " + nomTable + " effectuée avec succès !");
     }
 
     /**
@@ -214,7 +209,7 @@ public class DiskManager {
                 writer.write(pageIdx.toString());
                 writer.newLine();
             }
-            System.out.println("L'état a été sauvegardé avec succès dans " + cheminFichier);
+            //System.out.println("L'état a été sauvegardé avec succès dans " + cheminFichier);
         } catch (IOException e) {
             System.out.println("Erreur lors de la sauvegarde de l'état : " + e.getMessage());
         }
@@ -248,7 +243,7 @@ public class DiskManager {
                 pagesLibres.add(pageIdx); // Ajouter l'indice de la page libre à la liste
 
             }
-            System.out.println("L'état a été chargé avec succès depuis " + cheminFichier);
+            //System.out.println("L'état a été chargé avec succès depuis " + cheminFichier);
         } catch (IOException e) {
             System.out.println("Erreur lors du chargement de l'état : " + e.getMessage());
         } catch (NumberFormatException e) {
@@ -265,10 +260,27 @@ public class DiskManager {
         pageBuffer.putInt(0, pageId.getPageIdx()); // Write PageIdx as the first value
         pageBuffer.position(0); // Reset position before writing to ensure all bytes are written
 
-        // Call the WritePage method of DiskManager to persist the initialized page
+        // Call the WritePage method of DM.DiskManager to persist the initialized page
         WritePage(pageId, pageBuffer); // Persist to disk
-        System.out.println(
-                "La page a été initialisée: FileIdx = " + pageId.getFileIdx() + ", PageIdx = " + pageId.getPageIdx());
+//        System.out.println(
+//                "La page a été initialisée: FileIdx = " + pageId.getFileIdx() + ", PageIdx = " + pageId.getPageIdx());
+ }
+
+
+    public void cleanDirectory(File directory) {
+        if (directory.exists()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        cleanDirectory(file);
+                    } else {
+                        file.delete();
+                    }
+                }
+            }
+            directory.delete();
+        }
     }
 
 }

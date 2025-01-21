@@ -1,3 +1,8 @@
+package SGBD;
+
+import Relation.Relation;
+import Relation.Record;
+
 public class Condition {
     private String columnName;
     private String operator;

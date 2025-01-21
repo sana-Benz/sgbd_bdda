@@ -1,3 +1,6 @@
+package Relation;
+import DM.PageId;
+
 public class RecordId {
 
 	private PageId pageId;
@@ -28,7 +31,7 @@ public class RecordId {
   
   @Override
     public String toString() {
-        return "RecordId{" + "pageId=" + pageId + ", slotIdx=" + slotIdx + '}';
+        return "Relation.RecordId{" + "pageId=" + pageId + ", slotIdx=" + slotIdx + '}';
     }
     
   

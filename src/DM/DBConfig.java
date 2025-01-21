@@ -1,3 +1,4 @@
+package DM;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -35,7 +36,7 @@ public class DBConfig {
  
     public static DBConfig loadDBConfig(String fichierConfig) throws IOException, ParseException{
         JSONParser parser = new JSONParser();
-        FileReader reader = new FileReader("./src/data/infos.json");
+        FileReader reader = new FileReader(fichierConfig);
         Object obj = parser.parse(reader); // convertir json file --> java object
         JSONObject jsonObject = (JSONObject) obj; // convertir java object -->JSON object
 
@@ -49,5 +50,8 @@ public class DBConfig {
         return new DBConfig(dbpath, pagesize, dm_maxfilesize, bm_buffercount, bm_policy);
     }
 
+    public void setDbpath(String s) {
+        this.dbpath = s;
+    }
 }
 

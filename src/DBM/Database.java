@@ -1,8 +1,8 @@
-import java.util.*;
+package DBM;
+
+import Relation.Relation;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 public class Database {
     private String nom;
@@ -26,7 +26,7 @@ public class Database {
         relations.add(table);
     }
 
-    // Retourne une table (Relation) par son nom
+    // Retourne une table (Relation.Relation) par son nom
     public Relation getTable(String nomTable) {
         for (Relation relation : relations) {
             if (relation.getNomRelation().equals(nomTable)) {
@@ -36,7 +36,7 @@ public class Database {
         return null;
     }
 
-    // Supprime une table (Relation) par son nom
+    // Supprime une table (Relation.Relation) par son nom
     public boolean removeTable(String nomTable) {
         for (int i = 0; i < relations.size(); i++) {
             if (relations.get(i).getNomRelation().equals(nomTable)) {

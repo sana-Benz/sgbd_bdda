@@ -1,7 +1,7 @@
-import java.util.*;
+package Relation;
 
 public class Field {
-    private ColInfo colInfo; // Référence à ColInfo pour obtenir le type et la longueur
+    private ColInfo colInfo; // Référence à Relation.Relation.ColInfo pour obtenir le type et la longueur
     private Object value;     // Valeur du champ
 
     // Constructeur

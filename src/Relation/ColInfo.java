@@ -1,4 +1,4 @@
-import java.util.*;
+package Relation;
 
 public class ColInfo {
 	private String ColName;

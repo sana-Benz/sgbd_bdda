@@ -1,15 +1,19 @@
+package Relation;
+
+import BM.*;
+import DM.*;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Relation {
 	private String nomRelation;
 	private int nbCol;
 	private ArrayList<ColInfo> tableCols;
 	private PageId headerPageId;
-	private BufferManager buffer;  // Référence à BufferManager
+	private BufferManager buffer;  // Référence à BM.BufferManager
 	private DiskManager disk;
 	private DBConfig config;
 
@@ -18,7 +22,7 @@ public class Relation {
 		this.nomRelation = nomRelation;
 		this.nbCol = nbCol;
 		this.tableCols = tableCols;
-		this.buffer = buffer;  // Initialiser BufferManager
+		this.buffer = buffer;  // Initialiser BM.BufferManager
 		this.disk = disk;
 		this.config = config;
 		//creer une headerPage pour la nouvelle relation
@@ -27,7 +31,7 @@ public class Relation {
 			ByteBuffer headerData = buffer.GetPage(headerPageId);
 			headerData.clear(); // Clear the buffer before writing
 			headerData.putInt(0); // Write the initial value (0 pages)
-			//Buffer headerBuffer = new Buffer(headerPageId, headerData);
+			//BM.Buffer headerBuffer = new BM.Buffer(headerPageId, headerData);
 			buffer.FreePage(headerPageId, true);
 			buffer.flushBuffers();
 
@@ -54,7 +58,7 @@ public class Relation {
 	public ArrayList<String> getAllColumnNames() {
 	    ArrayList<String> nomsColonnes = new ArrayList<>();
 	    for (ColInfo colInfo : tableCols) {
-	        nomsColonnes.add(colInfo.getNameCol()); // Supposant que ColInfo possède une méthode getNomCol()
+	        nomsColonnes.add(colInfo.getNameCol()); // Supposant que Relation.Relation.ColInfo possède une méthode getNomCol()
 	    }
 	    return nomsColonnes;
 	}
@@ -86,7 +90,7 @@ public class Relation {
 	// * Méthode writeToBuffer qui écrit l'enregistrement dans un tampon. Elle gère
 	 //* les types de colonnes tels que INT, FLOAT, CHAR (longueur fixe) et VARCHAR
 	// * (longueur variable).
-    //* @param record : un Record (dont les valeurs sont remplies correctement par l’appelant)
+    //* @param record : un Relation.Record (dont les valeurs sont remplies correctement par l’appelant)
 	// * @param buff : ByteBuffer - le tampon dans lequel écrire.
 	// * @param pos  : int - la position de départ dans le tampon.
 	 //* @return int : la taille totale de l'enregistrement en octets, ou -1 en cas
@@ -97,7 +101,7 @@ public class Relation {
 			// Définir la position du buffer à la valeur spécifiée
 			buff.position(pos);
 			int totalSize = 0; // Variable pour suivre la taille totale du record
-			ArrayList<String> recValues = record.getValeursRec(); // Obtenir les valeurs du Record
+			ArrayList<String> recValues = record.getValeursRec(); // Obtenir les valeurs du Relation.Record
 
 			System.out.println("Écriture dans le buffer à la position : " + pos);
 			System.out.println("Valeurs du record : " + recValues);
@@ -190,9 +194,9 @@ public class Relation {
 	/**
 	 * Cette méthode rend comme résultat la taille totale (=le nombre d’octets) lus
 	 * depuis le buffer.
-	 * Elle lit les valeurs du Record depuis le buffer à partir de pos, en supposant
+	 * Elle lit les valeurs du Relation.Record depuis le buffer à partir de pos, en supposant
 	 * que le
-	 * Record a été écrit avec writeToBuffer.
+	 * Relation.Record a été écrit avec writeToBuffer.
 	 * 
 	 * @param record : dont la liste de valeurs est vide et sera remplie par cette
 	 *               méthode
@@ -292,11 +296,11 @@ public class Relation {
   
   /**
 	 * Cette méthode écrit l’enregistrement record dans la page de données identifiée par pageId, et
-	 *  renvoie son RecordId.
+	 *  renvoie son Relation.RecordId.
 	 *  On suppose que la page dispose d’assez d’espace disponible pour l’insertion.
 	 * @param record
 	 * @param pageId
-	 * @return RecordId du record écrit dans la dataPage
+	 * @return Relation.RecordId du record écrit dans la dataPage
 	 */
 	public RecordId writeRecordToDataPage(Record record, PageId pageId) {
 		try {
@@ -342,7 +346,7 @@ public class Relation {
 			buff.putInt(sizeRecord); // Taille du record
 
 			// Marquer la page comme modifiée
-			buffDataPage.setDirty(true); // Ensure this method exists in your Buffer class
+			buffDataPage.setDirty(true); // Ensure this method exists in your BM.Buffer class
 
 			// Mettre à jour l'espace libre dans l'en-tête
 			updateFreeSpaceInHeader(pageId, -sizeRecord); // Ensure this method is defined
@@ -351,7 +355,7 @@ public class Relation {
 			buffer.FreePage(pageId,true);
 			buffer.flushBuffers();
 
-			// Retourner un RecordId
+			// Retourner un Relation.RecordId
 			return new RecordId(pageId, slotIdx);
 
 		} catch (Exception e) {
@@ -361,11 +365,11 @@ public class Relation {
 	}
   
   /**
-	 * Cette méthode retourne le PageId d’une page de données sur laquelle il reste assez de place
+	 * Cette méthode retourne le DM.PageId d’une page de données sur laquelle il reste assez de place
 	 * pour insérer le record ; si une telle page n’existe pas, la méthode retournera null.
 	 * @param recordSize : un entier
 	 * correspondant à la taille du record à insérer.
-	 * @return PageId d'une page disponible, null sinon
+	 * @return DM.PageId d'une page disponible, null sinon
 	 */
 	// Utiliser buffer pour obtenir la Header Page
 	public PageId getFreeDataPageId(int recordSize) {
@@ -405,7 +409,7 @@ public class Relation {
 
 	/**
 	 * Cette méthode liste tous les records
-	 * @return ArrayList de Record
+	 * @return ArrayList de Relation.Record
 	 */
 	public ArrayList<Record> getAllRecords (){
 
@@ -434,7 +438,7 @@ public class Relation {
 		ByteBuffer bufferPage = null;
 
 		try {
-			// Charger la page via BufferManager
+			// Charger la page via BM.BufferManager
 			bufferPage = buffer.GetPage(pageId);
 
 			if (bufferPage == null) {
@@ -476,7 +480,7 @@ public class Relation {
 					}
 					listeRecords.add(record);
 				} else {
-					System.out.println("Record invalide : Start = " + recordStart + ", Size = " + recordSize);
+					System.out.println("Relation.Record invalide : Start = " + recordStart + ", Size = " + recordSize);
 				}
 			}
 		} catch (Exception e) {
@@ -542,7 +546,7 @@ public class Relation {
 	/**
 	 * Cette méthode devra rajouter une page de données « vide » au Heap File correspondant à la relation.
 	 * Pour cela, elle devra :
-	 * allouer une nouvelle page via AllocPage du DiskManager
+	 * allouer une nouvelle page via AllocPage du DM.DiskManager
 	 * actualiser le Page Directory en prenant en compte cette page
 	 */
 	public void addDataPage() {
@@ -597,18 +601,18 @@ public class Relation {
 
 	/**
 	 * Cette méthode écrit l’enregistrement record dans la page de données identifiée par pageId, et
-	 *  renvoie son RecordId.
+	 *  renvoie son Relation.RecordId.
 	 *  On suppose que la page dispose d’assez d’espace disponible pour l’insertion.
 	 //* @param record
 	 * @param pageId
-	 * @return RecordId du record écrit dans la dataPage
+	 * @return Relation.RecordId du record écrit dans la dataPage
 	 */
 	//il faut peut etre vérifier que le record n'existe pas dans la datapage
 	//pour éviter les doublons
-	/*public RecordId writeRecordToDataPage(Record record, PageId pageId) {
+	/*public Relation.RecordId writeRecordToDataPage(Relation.Record record, DM.PageId pageId) {
 		try {
 			ByteBuffer buff = buffer.GetPage(pageId);
-			Buffer buffDataPage = new Buffer(pageId, buff);
+			BM.Buffer buffDataPage = new BM.Buffer(pageId, buff);
 
 			// Ajoutez ces logs pour déboguer
 			System.out.println("offset pour slot directory: " + (config.getPageSize() - 8));
@@ -649,7 +653,7 @@ public class Relation {
 			buff.putInt(sizeRecord); // Taille du record
 
 			// Marquer la page comme modifiée
-			buffDataPage.setDirty(true); // Ensure this method exists in your Buffer class
+			buffDataPage.setDirty(true); // Ensure this method exists in your BM.Buffer class
 
 			// Mettre à jour l'espace libre dans l'en-tête
 			updateFreeSpaceInHeader(pageId, -sizeRecord); // Ensure this method is defined
@@ -658,8 +662,8 @@ public class Relation {
 			buffer.FreePage(pageId,true);
 			buffer.flushBuffers();
 
-			// Retourner un RecordId
-			return new RecordId(pageId, slotIdx);
+			// Retourner un Relation.RecordId
+			return new Relation.RecordId(pageId, slotIdx);
 
 		} catch (Exception e) {
 			System.err.println("Erreur lors de l'écriture du record sur la page de données : " + e.getMessage());
@@ -715,7 +719,7 @@ public class Relation {
 	    if (freePageId != null) {
 	        // Écrire le record dans la page de données
 	        RecordId recordId = writeRecordToDataPage(record, freePageId);
-	        System.out.println("Record ajouté avec succès avec RecordId : " + recordId);
+	        System.out.println("Relation.Record ajouté avec succès avec Relation.RecordId : " + recordId);
 	    } else {
 	        System.out.println("Erreur : Pas assez d'espace pour ajouter le record.");
 	    }

@@ -2263,7 +2263,7 @@
   <commands xmi:id="_ADqOy704Ee-EPq8yLdLURg" elementId="org.eclipse.m2e.sourcelookup.ui.importBinaryProject" commandName="Import Binary Project" category="_ADhCqb04Ee-EPq8yLdLURg"/>
   <commands xmi:id="_ADqOzL04Ee-EPq8yLdLURg" elementId="org.eclipse.ui.window.previousEditor" commandName="Previous Editor" description="Switch to the previous editor" category="_ADhClr04Ee-EPq8yLdLURg"/>
   <commands xmi:id="_ADqOzb04Ee-EPq8yLdLURg" elementId="org.eclipse.jdt.ui.edit.text.java.copy.qualified.name" commandName="Copy Qualified Name" description="Copy a fully qualified name to the system clipboard" category="_ADhCpL04Ee-EPq8yLdLURg"/>
-  <commands xmi:id="_ADqOzr04Ee-EPq8yLdLURg" elementId="org.eclipse.jdt.ui.edit.text.java.promote.local.variable" commandName="Convert Local Variable to Field" description="Convert a local variable to a field" category="_ADhCl704Ee-EPq8yLdLURg"/>
+  <commands xmi:id="_ADqOzr04Ee-EPq8yLdLURg" elementId="org.eclipse.jdt.ui.edit.text.java.promote.local.variable" commandName="Convert Local Variable to Relation.Field" description="Convert a local variable to a field" category="_ADhCl704Ee-EPq8yLdLURg"/>
   <commands xmi:id="_ADqOz704Ee-EPq8yLdLURg" elementId="org.eclipse.ui.edit.text.zoomIn" commandName="Zoom In" description="Zoom in text, increase default font size for text editors" category="_ADhCir04Ee-EPq8yLdLURg"/>
   <commands xmi:id="_ADqO0L04Ee-EPq8yLdLURg" elementId="org.eclipse.fx.ide.css.cssext.CssExtDsl.validate" commandName="Validate" description="Trigger expensive validation" category="_ADhCqb04Ee-EPq8yLdLURg"/>
   <commands xmi:id="_ADqO0b04Ee-EPq8yLdLURg" elementId="org.eclipse.ui.ide.OpenMarkersView" commandName="Open Another" description="Open another view" category="_ADhCqb04Ee-EPq8yLdLURg"/>
@@ -2636,7 +2636,7 @@
   <commands xmi:id="_ADqQLb04Ee-EPq8yLdLURg" elementId="org.eclipse.mylyn.builds.ui.commands.OpenBuildElementWithBrowser.url" commandName="Open Build with Browser" category="_ADhCqb04Ee-EPq8yLdLURg"/>
   <commands xmi:id="_ADqQLr04Ee-EPq8yLdLURg" elementId="org.eclipse.ui.edit.text.scroll.lineDown" commandName="Scroll Line Down" description="Scroll down one line of text" category="_ADhCir04Ee-EPq8yLdLURg"/>
   <commands xmi:id="_ADqQL704Ee-EPq8yLdLURg" elementId="org.eclipse.wst.sse.ui.search.find.occurrences" commandName="Occurrences in File" description="Find occurrences of the selection in the file" category="_ADhCg704Ee-EPq8yLdLURg"/>
-  <commands xmi:id="_ADqQML04Ee-EPq8yLdLURg" elementId="org.eclipse.ui.ToggleCoolbarAction" commandName="Toggle Main Toolbar Visibility" description="Toggles the visibility of the window toolbar" category="_ADhClr04Ee-EPq8yLdLURg"/>
+  <commands xmi:id="_ADqQML04Ee-EPq8yLdLURg" elementId="org.eclipse.ui.ToggleCoolbarAction" commandName="Toggle SGBD.SGBD.Main Toolbar Visibility" description="Toggles the visibility of the window toolbar" category="_ADhClr04Ee-EPq8yLdLURg"/>
   <commands xmi:id="_ADqQMb04Ee-EPq8yLdLURg" elementId="org.eclipse.wst.sse.ui.outline.customFilter" commandName="&amp;Filters" category="_ADhCqb04Ee-EPq8yLdLURg"/>
   <commands xmi:id="_ADqQMr04Ee-EPq8yLdLURg" elementId="org.eclipse.ui.navigate.openResource" commandName="Open Resource" description="Open an editor on a particular resource" category="_ADhCjb04Ee-EPq8yLdLURg">
     <parameters xmi:id="_ADqQM704Ee-EPq8yLdLURg" elementId="filePath" name="File Path" typeId="org.eclipse.ui.ide.resourcePath"/>

@@ -15,7 +15,7 @@ Le but principal de ce projet est de permettre la gestion de commandes de créat
 
 ## Structure du projet
 
-Le projet sera développé de manière progressive, en commençant par les couches "bas-niveau" du SGBD. Les différentes fonctionnalités seront ajoutées progressivement. 
+Le projet sera développé de manière progressive, en commençant par les couches "bas-niveau" du SGBD.SGBD. Les différentes fonctionnalités seront ajoutées progressivement. 
 
 ## Fonctionnalités prévues
 

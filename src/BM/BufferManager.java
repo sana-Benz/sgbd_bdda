@@ -1,3 +1,7 @@
+package BM;
+
+import DM.*;
+
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
@@ -11,7 +15,7 @@ public class BufferManager {
 		this.config = config;
 		this.diskManager = diskManager;
 		this.bufferPool = new LinkedList<>();
-		this.currentPolicy = config.getBm_policy(); // Récupération de la politique depuis DBConfig
+		this.currentPolicy = config.getBm_policy(); // Récupération de la politique depuis DM.DBConfig
 	}
 
 	private Buffer selectbufferToReplace() {
@@ -29,7 +33,7 @@ public class BufferManager {
 	}
 
 	/**
-	 * Cette méthode retourne un des buffers gérés par le BufferManager, rempli avec
+	 * Cette méthode retourne un des buffers gérés par le BM.BufferManager, rempli avec
 	 * le contenu de la page
 	 * désignée par l’argument pageId.
 	 * 
@@ -140,7 +144,7 @@ public class BufferManager {
 	/**
 	 * Cette méthode change la politique de remplacement courante, et a la priorité
 	 * par
-	 * rapport à la politique spécifiée par la DBConfig passée au constructeur.
+	 * rapport à la politique spécifiée par la DM.DBConfig passée au constructeur.
 	 * 
 	 * @param policy
 	 */
@@ -156,11 +160,11 @@ public class BufferManager {
 	/**
 	 * Cette méthode s'occupe de l’écriture de toutes les pages dont le flag dirty =
 	 * 1 sur disque en utilisant le
-	 * DiskManager.
+	 * DM.DiskManager.
 	 *
 	 * Elle s'occupe aussi de la remise à 0 de tous les flags et contenus des
 	 * buffers. Après appel de cette
-	 * méthode, le BufferManager repart avec des buffers où il n’y a aucun contenu
+	 * méthode, le BM.BufferManager repart avec des buffers où il n’y a aucun contenu
 	 * de chargé
 	 * comme dans son état initial après appel du constructeur.
 	 */

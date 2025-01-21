@@ -1,3 +1,12 @@
+package DBM;
+
+import BM.BufferManager;
+import DM.DBConfig;
+import DM.DiskManager;
+import DM.PageId;
+import Relation.Relation;
+import Relation. ColInfo;
+
 import java.io.BufferedReader;
 
 import java.io.BufferedWriter;
@@ -13,10 +22,10 @@ public class DBManager {
     public List<String> databases;         // List of database names
     private DBConfig config;                // Configuration for database path
     private Database currentDatabase;       // Currently active database
-	private DiskManager diskManager;        // Instance of DiskManager
-    private BufferManager bufferManager;    // Instance of BufferManager
+	private DiskManager diskManager;        // Instance of DM.DiskManager
+    private BufferManager bufferManager;    // Instance of BM.BufferManager
 
- // Constructor taking DBConfig and DiskManager instances
+ // Constructor taking DM.DBConfig and DM.DiskManager instances
     public DBManager(DBConfig config, DiskManager diskManager, BufferManager bufferManager) {
         this.config = config;
         this.diskManager = diskManager; // Initialize diskManager
@@ -44,7 +53,7 @@ public class DBManager {
 	// Method to set the current database
     public void setCurrentDatabase(String nomBdd) {
         if (databases.contains(nomBdd)) {
-            // Créez une nouvelle instance de Database pour la base de données courante
+            // Créez une nouvelle instance de DBM.Database pour la base de données courante
             currentDatabase = new Database(nomBdd, new ArrayList<>()); // Vous pouvez passer les relations si nécessaire
             System.out.println("Base de données courante définie sur : " + nomBdd);
         } else {
@@ -161,7 +170,7 @@ public void CreateTable(String nomTable, ArrayList<ColInfo> colonnes) {
         throw new IllegalStateException("Aucune base de données active.");
     }
 
-    try {
+//    try {
         // Créer une nouvelle Header Page pour la table
         PageId headerPageId = diskManager.AllocPage(); // Allouer une nouvelle page pour l'en-tête
         ByteBuffer headerPage = ByteBuffer.allocate(config.getPageSize());
@@ -175,9 +184,9 @@ public void CreateTable(String nomTable, ArrayList<ColInfo> colonnes) {
         Relation relation = new Relation(nomTable, colonnes.size(), colonnes, config,  diskManager, bufferManager);
         currentDatabase.addTable(relation); // Ajouter la table à la base de données courante
         System.out.println("Table " + nomTable + " ajoutée à la base de données " + currentDatabase.getNom() + ".");
-    } catch (IOException e) {
-        System.out.println("Erreur lors de l'allocation de la page : " + e.getMessage());
-    }
+//    } catch (IOException e) {
+//        System.out.println("Erreur lors de l'allocation de la page : " + e.getMessage());
+//    }
 }
 
     // Method to check if la table existe dans la base de données courante
@@ -220,7 +229,7 @@ public void CreateTable(String nomTable, ArrayList<ColInfo> colonnes) {
         if (currentDatabase == null) {
             throw new IllegalStateException("Aucune base de données active.");
         }
-        currentDatabase.listTables(); // Assurez-vous que cette méthode est définie dans la classe Database
+        currentDatabase.listTables(); // Assurez-vous que cette méthode est définie dans la classe DBM.Database
     }
 }
 

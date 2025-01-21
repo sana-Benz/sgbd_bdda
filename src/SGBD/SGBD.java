@@ -1,26 +1,29 @@
-import java.io.IOException;
+package SGBD;
 
+import java.io.IOException;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import BM.BufferManager;
+import DBM.DBManager;
+import DM.DBConfig;
+import DM.DiskManager;
+import Relation.Record;
+import Relation.RecordId;
+import Relation.ColInfo;
+import Relation.ColmType;
+import Relation.Relation;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 
 
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.json.simple.parser.ParseException;
-import java.util.*;
 
 public class SGBD {
     private DBConfig config;
@@ -29,7 +32,7 @@ public class SGBD {
     private DBManager dbManager;
 
 
-    // Constructeur qui prend en argument une instance de DBConfig
+    // Constructeur qui prend en argument une instance de DM.DBConfig
     public SGBD(DBConfig config) {
         this.config = config;
         try {
@@ -41,7 +44,7 @@ public class SGBD {
             diskManager.LoadState();
             dbManager.LoadState();
         } catch (IOException e) {
-            System.err.println("Erreur lors de l'initialisation du SGBD : " + e.getMessage());
+            System.err.println("Erreur lors de l'initialisation du SGBD.SGBD : " + e.getMessage());
         }
     }
     // Getters
@@ -240,14 +243,14 @@ public class SGBD {
         }
 
         // Ajoutez le record à la relation
-        Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), 0)); //on ne doit pas prendre le id de headerpage mais celui de datapage 
+        Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), 0)); //on ne doit pas prendre le id de headerpage mais celui de datapage
         ArrayList<String> valeursRec = new ArrayList<>();
         for (String value : values) {
             valeursRec.add(value.trim().replace("\"", "")); 
         }
         record.setValeursRec(valeursRec);
-        relation.addRecord(record); // Méthode à implémenter dans Relation
-        System.out.println("Record inséré avec succès.");
+        relation.addRecord(record); // Méthode à implémenter dans Relation.Relation
+        System.out.println("Relation.Record inséré avec succès.");
     }
     
    /*public void processBulkInsertCommand(String command) throws Exception {
@@ -262,7 +265,7 @@ public class SGBD {
         String fileName = parts[3];
 
         // Vérifiez si la relation existe
-        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
+        Relation.Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
         if (relation == null) {
             System.out.println("La relation " + relationName + " n'existe pas.");
             return;
@@ -283,7 +286,7 @@ public class SGBD {
                 }
 
                 // Créer un nouvel enregistrement
-                Record record = new Record(relation, new RecordId(relation.getHeaderPageId(), lineNumber)); // Utilisation d'un identifiant unique
+                Relation.Record record = new Relation.Record(relation, new Relation.RecordId(relation.getHeaderPageId(), lineNumber)); // Utilisation d'un identifiant unique
                 ArrayList<String> valeursRec = new ArrayList<>();
                 for (String value : values) {
                     valeursRec.add(value.trim().replace("\"", "")); // Enlever les guillemets
@@ -459,7 +462,7 @@ public class SGBD {
         }
 
         String relationName = parts[3];
-        Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
+        Relation.Relation relation = dbManager.GetTableFromCurrentDatabase(relationName);
         if (relation == null) {
             System.out.println("La relation " + relationName + " n'existe pas.");
             return;
@@ -474,14 +477,14 @@ public class SGBD {
 
         // Vérification de la clause WHERE
         String whereClause = command.contains("WHERE") ? command.substring(command.indexOf("WHERE") + 6) : "";
-        Condition condition = null;
+        SGBD.SGBD.Condition condition = null;
         if (!whereClause.isEmpty()) {
-            condition = new Condition(whereClause.trim()); // Implémentez la classe Condition pour gérer les conditions
+            condition = new SGBD.SGBD.Condition(whereClause.trim()); // Implémentez la classe SGBD.SGBD.Condition pour gérer les conditions
         }
 
         // Itération sur les tuples
         int totalRecords = 0;
-        for (Record record : relation.getAllRecords()) {
+        for (Relation.Record record : relation.getAllRecords()) {
             if (condition == null || condition.evaluate(record)) {
                 totalRecords++;
                 StringBuilder output = new StringBuilder();
@@ -502,7 +505,7 @@ public class SGBD {
         String commande;
 
         while (true) {
-            System.out.print("SGBD> ");
+            System.out.print("SGBD.SGBD> ");
             commande = scanner.nextLine();
 
             if (commande.equalsIgnoreCase("quit")) {
@@ -554,20 +557,20 @@ public class SGBD {
     // Méthode main
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
-            System.err.println("Usage: java SGBD <chemin_vers_fichier_config>");
+            System.err.println("Usage: java SGBD.SGBD <chemin_vers_fichier_config>");
             return;
         }
 
         String cheminConfig = args[0];
         try {
-            // Construire l'objet DBConfig à partir du chemin
+            // Construire l'objet DM.DBConfig à partir du chemin
             DBConfig config = DBConfig.loadDBConfig(cheminConfig);
-            // Créer une instance de SGBD
+            // Créer une instance de SGBD.SGBD
             SGBD sgbd = new SGBD(config);
             // Appeler la méthode Run
             sgbd.Run();
         } catch (IOException | ParseException e) {
-            System.err.println("Erreur lors de la configuration du SGBD : " + e.getMessage());
+            System.err.println("Erreur lors de la configuration du SGBD.SGBD : " + e.getMessage());
         }
     }}
     

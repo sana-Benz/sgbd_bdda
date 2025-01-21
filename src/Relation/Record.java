@@ -1,4 +1,5 @@
-import java.nio.ByteBuffer;
+package Relation;
+
 import java.util.ArrayList;
 
 public class Record {
@@ -50,11 +51,11 @@ public class Record {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Record [");
+		sb.append("Relation.Record [");
 
 		// Ajouter l'ID du record s'il existe
 		if (recordId != null) {
-			sb.append("Record ID: ").append(recordId).append(", ");
+			sb.append("Relation.Record ID: ").append(recordId).append(", ");
 		}
 
 		// Ajouter les valeurs des colonnes
