@@ -564,7 +564,6 @@ public class SGBD {
             System.err.println("Usage: java SGBD <chemin_vers_fichier_config>");
             return;
         }
-
         String cheminConfig = args[0];
         try {
             // Construire l'objet DBConfig à partir du chemin
