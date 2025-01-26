@@ -31,3 +31,8 @@ Pour installer et exécuter le projet, veuillez suivre ces étapes :
 1. Clonez le dépôt :
    ```bash
    git clone https://github.com/votre-utilisateur/mini-sgbdr.git
+```
+2. Pour exécuter le script :
+```bash
+./script.sh
+```
