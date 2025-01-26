@@ -34,6 +34,6 @@ Pour installer et exécuter le projet, veuillez suivre ces étapes :
    ```
    
 2. Pour exécuter le script :
-```bash
-./script.sh
-```
+   ```bash
+   ./script.sh
+   ```
